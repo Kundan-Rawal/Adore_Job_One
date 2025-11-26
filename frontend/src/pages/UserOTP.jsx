@@ -24,6 +24,7 @@ const UserVerifyOTP = () => {
             const res = await axios.post("https://jobone-mrpy.onrender.com/user/verifyotp", { email, otp });
             // Save JWT token in localStorage
             localStorage.setItem("userToken", res.data.token);
+            localStorage.setItem("userInfo", JSON.stringify(res.data.user));
             console.log(res.data.token);
             setMessage("✅ Account verified successfully! Redirecting...");
             setTimeout(() => navigate("/"), 1500);
