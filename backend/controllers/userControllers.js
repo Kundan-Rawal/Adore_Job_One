@@ -67,38 +67,65 @@ export const createUser = expressAsyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    // Cleanup if email fails
+    // Cleanup
     await User.deleteOne({ _id: savedUser._id });
     await UserOTP.deleteOne({ userId: savedUser._id });
+    
+    // --- DEBUG LOGGING ---
+    console.error("FULL ERROR DETAILS:", error); 
+    // ---------------------
+
     res.status(500);
-    throw new Error('Verification email failed. Please try again.');
+    // Send the actual error message to the frontend for now so you can see it
+    throw new Error(error.message); 
   }
 });
 
 
 
 export const verifyUserOTP = expressAsyncHandler(async (req, res) => {
-  // ... (existing validation logic) ...
+  const { email, otp } = req.body;
 
-  // Mark Verified
+  // 1. Find the User first
+  const user = await User.findOne({ email });
+  
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  // 2. Find the OTP record in the UserOTP collection
+  const otpRecord = await UserOTP.findOne({
+    userId: user._id,
+    otp: otp,
+  });
+
+  if (!otpRecord) {
+    res.status(400);
+    throw new Error("Invalid or expired OTP.");
+  }
+
+  // 3. Mark Verified
   user.isVerified = true;
   await user.save();
 
-  // Clean up OTP
+  // 4. Clean up OTP
   await UserOTP.deleteOne({ _id: otpRecord._id });
 
-  // Generate Token
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '5h' });
+  // 5. Generate Token
+  const token = jwt.sign(
+    { id: user._id }, 
+    process.env.JWT_SECRET, 
+    { expiresIn: '5h' }
+  );
   
-  // --- FIX: Return userId along with token ---
+  // 6. Send Response (With ID!)
   res.status(200).json({ 
       message: "Account verified!", 
       token,
-      userId: user._id // <--- ADDED THIS
+      userId: user._id 
   });
 });
-
-
 
 
 
@@ -131,7 +158,8 @@ export const loginUser = expressAsyncHandler(async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email
-      }
+      },
+      userId: user._id
     });
 });
 
