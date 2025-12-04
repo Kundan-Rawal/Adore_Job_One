@@ -10,6 +10,8 @@ export default function EmployerJobDetails() {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const newval = localStorage.getItem("employerInfo");
+
   useEffect(() => {
     const fetchJob = async () => {
       try {
