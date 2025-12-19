@@ -6,16 +6,20 @@ import UserRegister from "./pages/UserRegister.jsx";
 import About from "./pages/About";
 import Services from "./pages/Services";
 import EditProfile from "./pages/EditProfile.jsx";
+import EditProfile2 from "./pages/EditProfile2.jsx";
 import MyApplications from "./pages/MyApplications";
 import Jobs from "./pages/Jobs";
 import CreateJob from "./pages/CreateJob";
 import EmployerRegister from "./pages/EmployerRegister";
+import UserDashboard from "./pages/UserDashboard";
 import EmployerDashboard from "./pages/EmployerDashboard";
 import EmployerProfile from "./pages/EmployerProfile";
 import EmployerEditProfile from "./pages/EmployerEditProfile.jsx";
+import EmployerEditProfile2 from "./pages/EmployerEditProfile2.jsx";
 import Profile from "./pages/Profile.jsx";
 import Register from "./pages/Register.jsx";
 import ApplyPage from "./pages/ApplyPage";
+import AuthHome from "./routes/AuthHome";
 import EmployerOTP from "./pages/EmployerOTP";
 import EmployerJobDetails from "./pages/EmployerJobDetails";
 import UserOTP from "./pages/UserOTP";
@@ -23,9 +27,10 @@ import EmployerProtectedRoute from "./components/EmployerProtectedRoute";
 import DocumentUploadPage from "./pages/EmployerDOC.jsx";
 import Applicants from "./pages/Applicants.jsx";
 import PublicProfile from "./pages/PublicProfile.jsx";
+import EmployerRegisterOption from "./pages/EmployerRegisterOption.jsx";
 import Navbar from "./components/NavBar";
 import ProtectedRoute from "./components/ProtectedRoute";
-import TestLocation from "./pages/TestLocation.jsx";
+import TestLocation from "./pages/testlocation.jsx";
 
 function App() {
   return (
@@ -61,6 +66,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/editprofile2" element={<EditProfile2 />} />
         <Route
           path="/myapplications"
           element={
@@ -85,18 +91,28 @@ function App() {
             </EmployerProtectedRoute>
           }
         />
+        <Route path="/" element={<AuthHome />} />
         <Route path="/employerregister" element={<EmployerRegister />} />
         <Route path="/employerprofile" element={<EmployerProfile />} />
         <Route path="/employereditprofile" element={<EmployerEditProfile />} />
+        <Route
+          path="/employerotp/employereditprofile2"
+          element={<EmployerEditProfile2 />}
+        />
         <Route path="/employerdashboard" element={<EmployerDashboard />} />
+        <Route
+          path="/employerregisteroption"
+          element={<EmployerRegisterOption />}
+        />
+        <Route path="/userdashboard" element={<UserDashboard />} />
         <Route path="/employerotp" element={<EmployerOTP />} />
         <Route path="/job/:id" element={<EmployerJobDetails />} />
         <Route path="/userotp" element={<UserOTP />} />
         <Route path="/apply/:jobId" element={<ApplyPage />} />
         <Route path="/employerdocupload" element={<DocumentUploadPage />} />
         <Route path="/profile/:userId" element={<PublicProfile />} />
-          <Route path="/job/:id/applicants" element={<Applicants />} />
-          <Route path="/testlocation" element={<TestLocation />} />
+        <Route path="/job/:id/applicants" element={<Applicants />} />
+        <Route path="/job/JobsAroundMe" element={<TestLocation />} />
       </Routes>
     </Router>
   );
