@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FcGoogle } from "react-icons/fc";
+import { GoogleLogin } from "@react-oauth/google";
 import login from "../assets/login.jpg"; // adjust path to your actual file
 
 export default function Login() {
@@ -10,6 +11,36 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const endpoint =
+        activeTab === "employer"
+          ? "https://jobone-mrpy.onrender.com/employer/google-login"
+          : "https://jobone-mrpy.onrender.com/user/google-login";
+
+      const { data } = await axios.post(endpoint, {
+        token: credentialResponse.credential,
+      });
+
+      // Use your EXISTING save logic
+      if (activeTab === "employer") {
+        const employerData = {
+          token: data.token,
+          id: data.employerId || data.userId,
+        };
+        localStorage.setItem("employerInfo", JSON.stringify(employerData));
+        navigate("/employerdashboard");
+      } else {
+        const userData = { token: data.token, id: data.userId };
+        localStorage.setItem("userInfo", JSON.stringify(userData));
+        navigate("/");
+      }
+    } catch (err) {
+      console.error("Google Login Error:", err);
+      setError("Google Login failed. Please try again.");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,17 +107,15 @@ export default function Login() {
         </div>
 
         {/* Google Login (for both user and employer) */}
-        <button
-          onClick={handleGoogleLogin}
-          className="flex items-center justify-center w-full py-2 border rounded-md border-gray-300 hover:bg-gray-50 transition"
-        >
-          <FcGoogle className="text-xl mr-2" />
-          <span className="text-gray-700 text-sm font-medium">
-            {activeTab === "employer"
-              ? "Continue with Google (Employer)"
-              : "Continue with Google"}
-          </span>
-        </button>
+        <div className="flex justify-center w-full mb-4">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError("Google Login Failed")}
+            theme="outline"
+            size="large"
+            width="320" // Adjust width to match your form
+          />
+        </div>
 
         <div className="flex items-center my-4">
           <hr className="flex-grow border-gray-300" />
