@@ -4,6 +4,8 @@ import axios from "axios";
 import { FcGoogle } from "react-icons/fc";
 import { GoogleLogin } from "@react-oauth/google";
 import login from "../assets/login.jpg"; // adjust path to your actual file
+import { useLocation } from "react-router-dom"; // Import this
+import { AlertTriangle, X } from "lucide-react"; // Import icons
 
 export default function Login() {
   const navigate = useNavigate();
@@ -23,18 +25,39 @@ export default function Login() {
         token: credentialResponse.credential,
       });
 
-      // Use your EXISTING save logic
+      // ---------------------------------------------------------
+      // EMPLOYER LOGIC
+      // ---------------------------------------------------------
       if (activeTab === "employer") {
-        const employerData = {
-          token: data.token,
-          id: data.employerId || data.userId,
-        };
-        localStorage.setItem("employerInfo", JSON.stringify(employerData));
-        navigate("/employerdashboard");
-      } else {
-        const userData = { token: data.token, id: data.userId };
-        localStorage.setItem("userInfo", JSON.stringify(userData));
-        navigate("/");
+        // 1. Strict LocalStorage Logic (As requested)
+        localStorage.setItem("employerToken", data.token);
+        localStorage.setItem("employerInfo", JSON.stringify(data));
+        console.log("Employer Data Saved:", data);
+
+        // 2. Check Profile Completion
+        if (data.isProfileComplete === false) {
+          // Redirect to Edit Profile with Popup
+          navigate("/employereditprofile", { state: { showWarning: true } });
+        } else {
+          // Redirect to Dashboard
+          navigate("/employerdashboard");
+        }
+      }
+      // ---------------------------------------------------------
+      // USER LOGIC
+      // ---------------------------------------------------------
+      else {
+        // 1. Strict LocalStorage Logic (As requested)
+        localStorage.setItem("userToken", data.token);
+        localStorage.setItem("userInfo", JSON.stringify(data));
+        console.log("User Data Saved:", data);
+
+        // 2. Check Profile Completion
+        if (data.isProfileComplete === false) {
+          navigate("/editprofile", { state: { showWarning: true } });
+        } else {
+          navigate("/"); // Or "/userdashboard" if that route exists
+        }
       }
     } catch (err) {
       console.error("Google Login Error:", err);
@@ -70,10 +93,6 @@ export default function Login() {
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     }
-  };
-
-  const handleGoogleLogin = () => {
-    alert("Google login coming soon!");
   };
 
   return (
