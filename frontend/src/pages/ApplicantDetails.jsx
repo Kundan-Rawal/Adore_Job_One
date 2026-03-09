@@ -2,35 +2,38 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Building2, 
-  MapPin, 
-  Calendar, 
-  IndianRupee, 
-  Briefcase, 
-  Clock, 
-  Loader2, 
+import {
+  Building2,
+  MapPin,
+  Calendar,
+  IndianRupee,
+  Briefcase,
+  Clock,
+  Loader2,
   SearchX,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
-import ApplicationDetailsModal from "../components/ApplicationDetailsModal"; 
+import ApplicationDetailsModal from "../components/ApplicationDetailsModal"; // This will now resolve correctly
 
 export default function MyApplications() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedApplication, setSelectedApplication] = useState(null); // Changed from selectedJob
+  const [selectedApp, setSelectedApp] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchApplications = async () => {
       try {
         const storedUser = localStorage.getItem("userInfo");
-        if (!storedUser) { navigate("/login"); return; }
-        
+        if (!storedUser) {
+          navigate("/login");
+          return;
+        }
+
         const userInfo = JSON.parse(storedUser);
-        const { token, id } = userInfo; 
+        const { token, id } = userInfo;
         const userId = id || userInfo.userId;
 
         if (!token || !userId) {
@@ -40,9 +43,9 @@ export default function MyApplications() {
 
         const { data } = await axios.get(
           `https://jobone-mrpy.onrender.com/applications/${userId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
-        
+
         setApplications(data.applications || []);
       } catch (error) {
         console.error("Error fetching applications:", error);
@@ -54,10 +57,8 @@ export default function MyApplications() {
     fetchApplications();
   }, [navigate]);
 
-  // --- HELPERS ---
-
   const handleViewApplication = (application) => {
-    setSelectedApplication(application);
+    setSelectedApp(application);
   };
 
   const getStatusBadge = (status) => {
@@ -81,13 +82,7 @@ export default function MyApplications() {
             <Clock size={12} /> Interview
           </span>
         );
-      case "shortlisted":
-        return (
-          <span className="flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-200">
-            <CheckCircle2 size={12} /> Shortlisted
-          </span>
-        );
-      default: // 'applied'
+      default:
         return (
           <span className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-gray-200">
             <AlertCircle size={12} /> Applied
@@ -112,12 +107,15 @@ export default function MyApplications() {
           <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
             <SearchX className="text-slate-400" size={40} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">No Applications Yet</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">
+            No Applications Yet
+          </h2>
           <p className="text-slate-500 mb-8 leading-relaxed">
-            You haven't applied to any jobs yet. Your next career move is just a click away!
+            You haven't applied to any jobs yet. Your next career move is just a
+            click away!
           </p>
-          <Link 
-            to="/jobs" 
+          <Link
+            to="/jobs"
             className="block w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
           >
             Browse Jobs
@@ -130,15 +128,21 @@ export default function MyApplications() {
   return (
     <div className="min-h-screen bg-slate-50 py-20 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto mt-10">
-        
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">My Applications</h1>
-            <p className="text-slate-500 mt-1">Track and manage your job applications.</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              My Applications
+            </h1>
+            <p className="text-slate-500 mt-1">
+              Track and manage your job applications.
+            </p>
           </div>
           <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-sm font-medium text-slate-600">
-            Total Applications: <span className="text-blue-600 font-bold ml-1">{applications.length}</span>
+            Total Applications:{" "}
+            <span className="text-blue-600 font-bold ml-1">
+              {applications.length}
+            </span>
           </div>
         </div>
 
@@ -146,7 +150,11 @@ export default function MyApplications() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {applications.map((app) => {
             const job = app.job || {};
-            const locationStr = typeof job.location === 'object' ? job.location.address : job.location;
+            // Handle location object vs string
+            const locationStr =
+              typeof job.location === "object"
+                ? job.location.address
+                : job.location;
             const companyName = job.postedBy?.name || "Company Confidential";
             const companyImage = job.postedBy?.image;
 
@@ -163,61 +171,80 @@ export default function MyApplications() {
                 <div className="p-6 pb-4">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex gap-4">
-                       <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 flex items-center justify-center text-xl font-bold text-blue-600 shadow-sm shrink-0">
-                          {companyImage ? (
-                              <img src={companyImage} alt="Logo" className="w-full h-full object-cover rounded-xl"/>
-                          ) : (
-                              companyName.charAt(0).toUpperCase()
-                          )}
-                       </div>
-                       <div className="min-w-0">
-                          <h3 className="font-bold text-slate-900 text-lg leading-snug truncate pr-2" title={job.title}>
-                             {job.title || "Job Title Unavailable"}
-                          </h3>
-                          <p className="text-sm text-slate-500 font-medium flex items-center gap-1.5 mt-1 truncate">
-                             <Building2 size={14} className="text-slate-400"/>
-                             {companyName}
-                          </p>
-                       </div>
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 flex items-center justify-center text-xl font-bold text-blue-600 shadow-sm shrink-0 overflow-hidden">
+                        {companyImage ? (
+                          <img
+                            src={companyImage}
+                            alt="Logo"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          companyName.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h3
+                          className="font-bold text-slate-900 text-lg leading-snug truncate pr-2"
+                          title={job.title}
+                        >
+                          {job.title || "Job Title Unavailable"}
+                        </h3>
+                        <p className="text-sm text-slate-500 font-medium flex items-center gap-1.5 mt-1 truncate">
+                          <Building2 size={14} className="text-slate-400" />
+                          {companyName}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
                   {/* Status Badge */}
-                  <div className="mb-6">
-                      {getStatusBadge(app.status)}
-                  </div>
+                  <div className="mb-6">{getStatusBadge(app.status)}</div>
 
                   {/* Job Details */}
                   <div className="space-y-2.5">
                     <div className="flex items-center gap-2.5 text-sm text-slate-600">
-                       <div className="p-1.5 bg-slate-50 rounded-md"><MapPin size={14} className="text-slate-400"/></div>
-                       <span className="truncate">{locationStr || "Remote"}</span>
+                      <div className="p-1.5 bg-slate-50 rounded-md">
+                        <MapPin size={14} className="text-slate-400" />
+                      </div>
+                      <span className="truncate">
+                        {locationStr || "Remote"}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2.5 text-sm text-slate-600">
-                       <div className="p-1.5 bg-slate-50 rounded-md"><IndianRupee size={14} className="text-slate-400"/></div>
-                       <span>{job.salary ? job.salary.toLocaleString() : "Not Disclosed"}</span>
+                      <div className="p-1.5 bg-slate-50 rounded-md">
+                        <IndianRupee size={14} className="text-slate-400" />
+                      </div>
+                      <span>
+                        {job.salary
+                          ? job.salary.toLocaleString()
+                          : "Not Disclosed"}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2.5 text-sm text-slate-600">
-                       <div className="p-1.5 bg-slate-50 rounded-md"><Briefcase size={14} className="text-slate-400"/></div>
-                       <span className="capitalize">{job.jobType || "Full-time"}</span>
+                      <div className="p-1.5 bg-slate-50 rounded-md">
+                        <Briefcase size={14} className="text-slate-400" />
+                      </div>
+                      <span className="capitalize">
+                        {job.jobType || "Full-time"}
+                      </span>
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Footer */}
                 <div className="mt-auto px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-between items-center">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                        <Calendar size={14} /> 
-                        Applied: {new Date(app.appliedAt).toLocaleDateString()}
-                    </div>
-                    
-                    {/* BUTTON TO OPEN MODAL */}
-                    <button 
-                        onClick={() => handleViewApplication(app)}
-                        className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
-                    >
-                        View Status →
-                    </button>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                    <Calendar size={14} />
+                    Applied: {new Date(app.appliedAt).toLocaleDateString()}
+                  </div>
+
+                  {/* BUTTON TO OPEN MODAL */}
+                  <button
+                    onClick={() => handleViewApplication(app)}
+                    className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    View Status →
+                  </button>
                 </div>
               </motion.div>
             );
@@ -227,14 +254,13 @@ export default function MyApplications() {
 
       {/* APPLICATION DETAILS MODAL */}
       <AnimatePresence>
-        {selectedApplication && (
-          <ApplicationDetailsModal 
-            application={selectedApplication} 
-            onClose={() => setSelectedApplication(null)} 
+        {selectedApp && (
+          <ApplicationDetailsModal
+            application={selectedApp}
+            onClose={() => setSelectedApp(null)}
           />
         )}
       </AnimatePresence>
-
     </div>
   );
 }

@@ -6,43 +6,84 @@ import Employer from "../models/employer.js"; // Adjust path as needed
 
 
 export const createJob = expressAsyncHandler(async (req, res) => {
-  // 1. Check for validation errors
+  // 1. Validation
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     res.status(400);
     throw new Error(errors.array()[0].msg);
   }
 
-  // 2. Find the employer who is posting the job
-  // We get req.employerId from the 'protectEmployer' middleware
-  const employer = await Employer.findById(req.employerId).select('name profilePicture createdJobs');
+  // 2. Fetch the Employer
+  const employer = await Employer.findById(req.employerId);
 
   if (!employer) {
     res.status(404);
     throw new Error('Employer not found');
   }
 
-  // 3. Create the new job
+  // --- STRICT PROFILE CHECK ---
+  // Define what "Fully Completed" means for your platform
+  const requiredFields = ['companyName', 'phone', 'location', 'industry', 'description', 'companyWebsite'];
+  const missingFields = requiredFields.filter(field => !employer[field] || employer[field].trim() === '');
+
+  if (missingFields.length > 0) {
+    res.status(403); // Forbidden
+    throw new Error(`You must complete your profile before posting a job. Missing: ${missingFields.join(', ')}`);
+  }
+  // -----------------------------
+
+  const { 
+    title, description, jobType, skillsRequired, 
+    salary, durationType, startDate, endDate, 
+    dailyWorkingHours, mode, workFrom, workTo, 
+    noOfDays, noOfPeopleRequired, genderPreference, 
+    paymentPerHour, pinCode,
+    latitude, longitude, address 
+  } = req.body;
+
+  // 3. Construct Location (Same as before)
+  let locationData;
+  if (latitude && longitude) {
+    locationData = {
+      type: 'Point',
+      coordinates: [parseFloat(longitude), parseFloat(latitude)],
+      address: address || "Location not specified"
+    };
+  } else {
+    if (mode !== 'Online') {
+        res.status(400);
+        throw new Error("Please pick a location on the map.");
+    }
+    locationData = {
+      type: 'Point',
+      coordinates: [0, 0],
+      address: "Remote"
+    };
+  }
+
+  // 4. Create Job
   const newJob = new Job({
-    ...req.body,
+    title, description, jobType, skillsRequired, 
+    salary, durationType, startDate, endDate, 
+    dailyWorkingHours, mode, workFrom, workTo, 
+    noOfDays, noOfPeopleRequired, genderPreference, 
+    paymentPerHour, pinCode,
+    location: locationData,
+
     postedBy: req.employerId,
-    postedByName: employer.name,
-    postedByImage: employer.profilePicture || '', // Use profile pic or empty string
+    postedByName: employer.name, 
+    postedByImage: employer.profilePicture || '', 
+    postedByCompany: employer.companyName, // Now guaranteed to exist
   });
 
-  // 4. Save the job
   const savedJob = await newJob.save();
-
-  // 5. Add this job's ID to the employer's 'createdJobs' array
+  
+  // 5. Link to Employer
   employer.createdJobs.push(savedJob._id);
   await employer.save();
-
-  // 6. Send the new job as the response
+  
   res.status(201).json(savedJob);
 });
-
-
-
 
 
 export const getJob = expressAsyncHandler(async (req, res) => {
