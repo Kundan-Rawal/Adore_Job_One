@@ -29,7 +29,13 @@ export default function PublicProfile() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(initialStatus);
   const [actionLoading, setActionLoading] = useState(false);
-
+  const [actionModal, setActionModal] = useState({
+    show: false,
+    status: "",
+    title: "",
+    requireMessage: false,
+  });
+  const [employerMessage, setEmployerMessage] = useState("");
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -73,10 +79,8 @@ export default function PublicProfile() {
     fetchUserProfile();
   }, [userId]);
 
-  const handleStatusUpdate = async (newStatus) => {
+  const handleStatusUpdate = async () => {
     if (!applicationId) return;
-    if (!window.confirm(`Mark this candidate as ${newStatus.toUpperCase()}?`))
-      return;
 
     setActionLoading(true);
     try {
@@ -85,17 +89,25 @@ export default function PublicProfile() {
 
       await axios.patch(
         `https://jobone-mrpy.onrender.com/applications/${applicationId}/status`,
-        { status: newStatus },
+        // FACT: Sending the message payload to the backend
+        { status: actionModal.status, employerMessage: employerMessage },
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      setStatus(newStatus);
-      alert(`Candidate status updated to: ${newStatus}`);
+      setStatus(actionModal.status);
+      alert(`Candidate status updated to: ${actionModal.status}`);
     } catch (error) {
       console.error("Update failed", error);
       alert("Failed to update status.");
     } finally {
       setActionLoading(false);
+      setActionModal({
+        show: false,
+        status: "",
+        title: "",
+        requireMessage: false,
+      });
+      setEmployerMessage("");
     }
   };
 
@@ -110,7 +122,7 @@ export default function PublicProfile() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 font-sans">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto mt-10">
         {/* HEADER & ACTIONS */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <button
@@ -120,43 +132,90 @@ export default function PublicProfile() {
             <ArrowLeft size={18} /> Back
           </button>
 
-          {/* EMPLOYER ACTIONS (Only show if applicationId exists) */}
+          {/* EMPLOYER ACTIONS (Mapped to new Phase 1 DB Schema) */}
           {applicationId && (
-            <div className="flex gap-3 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex flex-wrap gap-2 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
               {status === "hired" ? (
                 <span className="px-6 py-2 bg-green-100 text-green-700 font-bold rounded-lg border border-green-200 flex items-center gap-2">
                   <CheckCircle size={18} /> Hired
                 </span>
-              ) : status === "rejected" ? (
-                <span className="px-6 py-2 bg-red-100 text-red-700 font-bold rounded-lg border border-red-200 flex items-center gap-2">
-                  <XCircle size={18} /> Rejected
+              ) : status === "NCTT" ? (
+                <span
+                  className="px-6 py-2 bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 flex items-center gap-2"
+                  title="Not Considered This Time"
+                >
+                  <XCircle size={18} /> Not Considered (NCTT)
                 </span>
               ) : (
                 <>
                   <button
-                    onClick={() => handleStatusUpdate("rejected")}
+                    onClick={() =>
+                      setActionModal({
+                        show: true,
+                        status: "shortlisted",
+                        title: "Shortlist Candidate",
+                        requireMessage: true,
+                      })
+                    }
                     disabled={actionLoading}
-                    className="px-5 py-2 bg-white border border-red-200 text-red-600 font-bold rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2 text-sm"
+                    className="px-4 py-2 bg-blue-50 text-blue-600 font-bold rounded-lg hover:bg-blue-100 transition-colors text-sm"
                   >
-                    <XCircle size={16} /> Reject
+                    Shortlist
                   </button>
                   <button
-                    onClick={() => handleStatusUpdate("interview")}
+                    onClick={() =>
+                      setActionModal({
+                        show: true,
+                        status: "Interview Scheduled",
+                        title: "Schedule Interview",
+                        requireMessage: true,
+                      })
+                    }
                     disabled={actionLoading}
-                    className="px-5 py-2 bg-white border border-purple-200 text-purple-600 font-bold rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2 text-sm"
+                    className="px-4 py-2 bg-purple-50 text-purple-600 font-bold rounded-lg hover:bg-purple-100 transition-colors text-sm"
                   >
-                    <Clock size={16} /> Interview
+                    Interview
                   </button>
                   <button
-                    onClick={() => handleStatusUpdate("hired")}
+                    onClick={() =>
+                      setActionModal({
+                        show: true,
+                        status: "Assignment Scheduled",
+                        title: "Schedule Assignment",
+                        requireMessage: true,
+                      })
+                    }
                     disabled={actionLoading}
-                    className="px-5 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors shadow-md flex items-center gap-2 text-sm"
+                    className="px-4 py-2 bg-orange-50 text-orange-600 font-bold rounded-lg hover:bg-orange-100 transition-colors text-sm"
                   >
-                    {actionLoading ? (
-                      <Loader2 className="animate-spin" size={16} />
-                    ) : (
-                      <CheckCircle size={16} />
-                    )}{" "}
+                    Assignment
+                  </button>
+                  <button
+                    onClick={() =>
+                      setActionModal({
+                        show: true,
+                        status: "NCTT",
+                        title: "Not Considered This Time",
+                        requireMessage: false,
+                      })
+                    }
+                    disabled={actionLoading}
+                    className="px-4 py-2 bg-white border border-rose-200 text-rose-600 font-bold rounded-lg hover:bg-rose-50 transition-colors text-sm"
+                  >
+                    NCTT
+                  </button>
+                  <button
+                    onClick={() =>
+                      setActionModal({
+                        show: true,
+                        status: "hired",
+                        title: "Hire Candidate",
+                        requireMessage: false,
+                      })
+                    }
+                    disabled={actionLoading}
+                    className="px-5 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 shadow-md transition-colors flex items-center gap-2 text-sm"
+                  >
                     Hire
                   </button>
                 </>
@@ -315,6 +374,67 @@ export default function PublicProfile() {
           </div>
         </div>
       </div>
+      {/* Unified Action Modal with Messaging */}
+      {actionModal.show && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
+              {actionModal.title}
+            </h3>
+
+            {actionModal.requireMessage ? (
+              <div className="mb-6 mt-4">
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Message / Details (Sent to Applicant)
+                </label>
+                <textarea
+                  value={employerMessage}
+                  onChange={(e) => setEmployerMessage(e.target.value)}
+                  placeholder="Enter meeting links, dates, or assignment instructions here..."
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 h-32 resize-y text-sm"
+                />
+              </div>
+            ) : (
+              <p className="text-slate-600 mb-6 mt-2">
+                Are you sure you want to mark this candidate as{" "}
+                {actionModal.status}? This action will update their dashboard.
+              </p>
+            )}
+
+            <div className="flex gap-4 justify-end">
+              <button
+                onClick={() => {
+                  setActionModal({
+                    show: false,
+                    status: "",
+                    title: "",
+                    requireMessage: false,
+                  });
+                  setEmployerMessage("");
+                }}
+                className="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStatusUpdate}
+                disabled={
+                  actionLoading ||
+                  (actionModal.requireMessage && !employerMessage.trim())
+                }
+                className="px-5 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
+              >
+                {actionLoading ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <CheckCircle size={18} />
+                )}
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
