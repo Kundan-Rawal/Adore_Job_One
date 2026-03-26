@@ -277,3 +277,29 @@ export const getJobApplicants = expressAsyncHandler(async (req, res) => {
   // 4. Return the populated list
   res.status(200).json(job.applicants);
 });
+
+
+
+
+export const getSimilarJobs = expressAsyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  const currentJob = await Job.findById(id);
+  if (!currentJob) {
+    res.status(404);
+    throw new Error("Job not found");
+  }
+
+  // Find jobs that share skills OR the same work mode, excluding the current job
+  const similarJobs = await Job.find({
+    _id: { $ne: id }, // Don't recommend the job they are already looking at
+    $or: [
+      { skillsRequired: { $in: currentJob.skillsRequired || [] } },
+      { mode: currentJob.mode }
+    ]
+  })
+  .limit(3) // Keep the UI clean by only showing the top 3 best matches
+  .sort({ createdAt: -1 }); // Newest matching jobs first
+
+  res.status(200).json(similarJobs);
+});
