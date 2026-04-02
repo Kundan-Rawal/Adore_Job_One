@@ -14,6 +14,8 @@ import {
   AlertCircle,
   FileText,
   CheckSquare,
+  MessageSquareQuote,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -25,7 +27,7 @@ export default function JobApplicants() {
   const [loading, setLoading] = useState(true);
   const [jobTitle, setJobTitle] = useState("");
 
-  // FACT: State for Bulk Actions
+  // State for Bulk Actions & Modals
   const [selectedApps, setSelectedApps] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionModal, setActionModal] = useState({
@@ -33,8 +35,15 @@ export default function JobApplicants() {
     status: "",
     title: "",
     requireMessage: false,
+    appId: null, // Needed for single-candidate actions like Reschedule
+    requestData: null, // Holds the reason & time
   });
   const [employerMessage, setEmployerMessage] = useState("");
+  const [pitchModal, setPitchModal] = useState({
+    show: false,
+    message: "",
+    name: "",
+  });
 
   useEffect(() => {
     const fetchApplicants = async () => {
@@ -65,12 +74,11 @@ export default function JobApplicants() {
     fetchApplicants();
   }, [id, navigate]);
 
-  // --- SELECTION LOGIC ---
   const handleSelectAll = () => {
     if (selectedApps.length === applicants.length) {
-      setSelectedApps([]); // Deselect all
+      setSelectedApps([]);
     } else {
-      setSelectedApps(applicants.map((app) => app._id)); // Select all
+      setSelectedApps(applicants.map((app) => app._id));
     }
   };
 
@@ -82,7 +90,6 @@ export default function JobApplicants() {
     }
   };
 
-  // --- BULK UPDATE LOGIC ---
   const handleBulkStatusUpdate = async () => {
     if (selectedApps.length === 0) return;
     setActionLoading(true);
@@ -91,7 +98,6 @@ export default function JobApplicants() {
       const stored = localStorage.getItem("employerInfo");
       const { token } = JSON.parse(stored);
 
-      // FACT: Fires updates in parallel for all selected candidates
       await Promise.all(
         selectedApps.map((appId) =>
           axios.patch(
@@ -102,7 +108,6 @@ export default function JobApplicants() {
         ),
       );
 
-      // Instantly update the UI table without needing to refresh the page
       setApplicants((prev) =>
         prev.map((app) =>
           selectedApps.includes(app._id)
@@ -127,7 +132,47 @@ export default function JobApplicants() {
     }
   };
 
-  // FACT: Phase 1 Status Badges
+  // FACT: Function to handle the Employer's decision on the Reschedule Request
+  const handleRescheduleResponse = async (action) => {
+    setActionLoading(true);
+    try {
+      const token = JSON.parse(localStorage.getItem("employerInfo")).token;
+      await axios.patch(
+        `https://jobone-mrpy.onrender.com/applications/${actionModal.appId}/reschedule/respond`,
+        { action, employerMessage },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      setApplicants((prev) =>
+        prev.map((app) =>
+          app._id === actionModal.appId
+            ? {
+                ...app,
+                rescheduleRequest: {
+                  ...app.rescheduleRequest,
+                  requestStatus: action,
+                },
+                employerMessage,
+              }
+            : app,
+        ),
+      );
+
+      setActionModal({
+        show: false,
+        status: "",
+        title: "",
+        requireMessage: false,
+      });
+      setEmployerMessage("");
+    } catch (err) {
+      alert("Failed to process response. Please try again.");
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "hired":
@@ -179,7 +224,6 @@ export default function JobApplicants() {
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 font-sans pb-32">
       <div className="max-w-7xl mx-auto">
-        {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <button
@@ -200,7 +244,7 @@ export default function JobApplicants() {
           </div>
         </div>
 
-        {/* BULK ACTION TOOLBAR (Floating) */}
+        {/* BULK ACTION TOOLBAR */}
         <AnimatePresence>
           {selectedApps.length > 0 && (
             <motion.div
@@ -334,7 +378,6 @@ export default function JobApplicants() {
                   {applicants.map((app) => {
                     const candidate = app.appliedBy || app.applicant;
                     if (!candidate) return null;
-
                     const isSelected = selectedApps.includes(app._id);
 
                     return (
@@ -378,23 +421,64 @@ export default function JobApplicants() {
                           </div>
                         </td>
                         <td className="p-4 text-sm font-bold text-slate-600">
-                          {new Date(app.createdAt).toLocaleDateString()}
+                          {new Date(
+                            app.createdAt || app.appliedAt,
+                          ).toLocaleDateString()}
                         </td>
                         <td className="p-4">{getStatusBadge(app.status)}</td>
                         <td className="p-4 text-right">
-                          <button
-                            onClick={() =>
-                              navigate(`/profile/${candidate._id}`, {
-                                state: {
-                                  applicationId: app._id,
-                                  status: app.status,
-                                },
-                              })
-                            }
-                            className="inline-flex items-center gap-1.5 bg-white border border-slate-200 text-indigo-600 font-bold px-4 py-2 rounded-lg hover:bg-indigo-50 hover:border-indigo-200 transition-all text-sm shadow-sm"
-                          >
-                            View Profile <ChevronRight size={16} />
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            {/* FACT: Read Pitch Button */}
+                            {app.applicantMessage && (
+                              <button
+                                onClick={() =>
+                                  setPitchModal({
+                                    show: true,
+                                    message: app.applicantMessage,
+                                    name: candidate.name,
+                                  })
+                                }
+                                className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-700 font-bold px-3 py-2 rounded-lg hover:bg-amber-100 transition-all text-sm shadow-sm"
+                                title="Read Pitch"
+                              >
+                                <MessageSquareQuote size={16} /> Pitch
+                              </button>
+                            )}
+
+                            {/* FACT: Reschedule Request Button */}
+                            {app.rescheduleRequest?.requestStatus ===
+                              "pending" && (
+                              <button
+                                onClick={() =>
+                                  setActionModal({
+                                    show: true,
+                                    status: "reschedule_review",
+                                    title: `Review Time: ${candidate.name}`,
+                                    requireMessage: false,
+                                    appId: app._id,
+                                    requestData: app.rescheduleRequest,
+                                  })
+                                }
+                                className="inline-flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 font-bold px-3 py-2 rounded-lg hover:bg-orange-100 transition-all text-sm shadow-sm animate-pulse"
+                              >
+                                <Clock size={16} /> Review Time
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() =>
+                                navigate(`/profile/${candidate._id}`, {
+                                  state: {
+                                    applicationId: app._id,
+                                    status: app.status,
+                                  },
+                                })
+                              }
+                              className="inline-flex items-center gap-1.5 bg-white border border-slate-200 text-indigo-600 font-bold px-4 py-2 rounded-lg hover:bg-indigo-50 hover:border-indigo-200 transition-all text-sm shadow-sm"
+                            >
+                              Profile <ChevronRight size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -406,7 +490,47 @@ export default function JobApplicants() {
         )}
       </div>
 
-      {/* UNIFIED MESSAGE MODAL */}
+      {/* PITCH MODAL */}
+      <AnimatePresence>
+        {pitchModal.show && (
+          <div
+            className="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() =>
+              setPitchModal({ show: false, message: "", name: "" })
+            }
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative"
+            >
+              <button
+                onClick={() =>
+                  setPitchModal({ show: false, message: "", name: "" })
+                }
+                className="absolute top-6 right-6 text-slate-400 hover:text-slate-600"
+              >
+                <X size={20} />
+              </button>
+              <div className="flex items-center gap-3 mb-4 text-amber-600">
+                <MessageSquareQuote size={28} />
+                <h3 className="text-xl font-extrabold text-slate-900">
+                  Pitch from {pitchModal.name}
+                </h3>
+              </div>
+              <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl">
+                <p className="text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
+                  "{pitchModal.message}"
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* UNIFIED MESSAGE MODAL (NOW SUPPORTS RESCHEDULE APPROVALS) */}
       {actionModal.show && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
@@ -414,7 +538,34 @@ export default function JobApplicants() {
               {actionModal.title}
             </h3>
 
-            {actionModal.requireMessage ? (
+            {/* FACT: Custom layout specifically for the Reschedule Review */}
+            {actionModal.status === "reschedule_review" ? (
+              <div className="mb-6 mt-4">
+                <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl mb-5 space-y-2">
+                  <p className="text-sm text-orange-900">
+                    <strong className="font-extrabold text-orange-950">
+                      Reason:
+                    </strong>{" "}
+                    {actionModal.requestData?.reason}
+                  </p>
+                  <p className="text-sm text-orange-900">
+                    <strong className="font-extrabold text-orange-950">
+                      Proposed Time:
+                    </strong>{" "}
+                    {actionModal.requestData?.proposedTime}
+                  </p>
+                </div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Message to Candidate (Include links if approving)
+                </label>
+                <textarea
+                  value={employerMessage}
+                  onChange={(e) => setEmployerMessage(e.target.value)}
+                  placeholder="Enter meeting links or rejection reason..."
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 h-28 resize-y text-sm font-medium"
+                />
+              </div>
+            ) : actionModal.requireMessage ? (
               <div className="mb-6 mt-4">
                 <label className="block text-sm font-bold text-slate-700 mb-2">
                   Message (Sent to {selectedApps.length} Candidates via Email)
@@ -434,7 +585,7 @@ export default function JobApplicants() {
               </p>
             )}
 
-            <div className="flex gap-4 justify-end">
+            <div className="flex gap-3 justify-end">
               <button
                 onClick={() => {
                   setActionModal({
@@ -449,21 +600,47 @@ export default function JobApplicants() {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleBulkStatusUpdate}
-                disabled={
-                  actionLoading ||
-                  (actionModal.requireMessage && !employerMessage.trim())
-                }
-                className="px-5 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-indigo-200"
-              >
-                {actionLoading ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <CheckSquare size={18} />
-                )}{" "}
-                Confirm Update
-              </button>
+
+              {/* FACT: Distinct buttons for the Reschedule view */}
+              {actionModal.status === "reschedule_review" ? (
+                <>
+                  <button
+                    onClick={() => handleRescheduleResponse("rejected")}
+                    disabled={actionLoading}
+                    className="px-5 py-2.5 rounded-xl font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 disabled:opacity-50"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => handleRescheduleResponse("approved")}
+                    disabled={actionLoading}
+                    className="px-5 py-2.5 rounded-xl font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {actionLoading ? (
+                      <Loader2 className="animate-spin" size={16} />
+                    ) : (
+                      <CheckCircle2 size={16} />
+                    )}{" "}
+                    Approve
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleBulkStatusUpdate}
+                  disabled={
+                    actionLoading ||
+                    (actionModal.requireMessage && !employerMessage.trim())
+                  }
+                  className="px-5 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-indigo-200"
+                >
+                  {actionLoading ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <CheckSquare size={18} />
+                  )}{" "}
+                  Confirm Update
+                </button>
+              )}
             </div>
           </div>
         </div>
