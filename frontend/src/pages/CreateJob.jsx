@@ -95,6 +95,9 @@ export default function CreateJob() {
   const [currency, setCurrency] = useState("INR");
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [currencySearch, setCurrencySearch] = useState("");
+  const [pageAccess, setPageAccess] = useState("checking");
+  const [blockMessage, setBlockMessage] = useState("");
+  const [missingItems, setMissingItems] = useState([]);
   const currencyRef = useRef(null);
 
   const flagUrl = (iso) => `https://flagcdn.com/20x15/${iso}.png`;
@@ -170,6 +173,97 @@ export default function CreateJob() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useEffect(() => {
+    const checkEligibility = async () => {
+      try {
+        const storedData = localStorage.getItem("employerInfo");
+        if (!storedData) {
+          navigate("/login");
+          return;
+        }
+
+        const { token, id, employerId } = JSON.parse(storedData);
+        const targetId = employerId || id;
+
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        const { data } = await axios.get(
+          `https://jobone-mrpy.onrender.com/employer/profile/${targetId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        // 1. Admin Approval Check
+        if (data.isApproved === "pending") {
+          setBlockMessage(
+            "Your account is currently under review by the administration. You will be able to post jobs once you are approved.",
+          );
+          setPageAccess("blocked");
+          return;
+        }
+        if (data.isApproved === "rejected") {
+          setBlockMessage(
+            "Your account has been rejected by the administration. You do not have permission to post jobs.",
+          );
+          setPageAccess("blocked");
+          return;
+        }
+
+        // 2. Strict Document & Profile Check (Mirrors the Backend Controller)
+        let missing = [];
+        const baseFields = [
+          "phone",
+          "location",
+          "industry",
+          "description",
+          "aadharCard",
+          "panCard",
+        ];
+        baseFields.forEach((field) => {
+          if (!data[field] || String(data[field]).trim() === "")
+            missing.push(field);
+        });
+
+        if (data.employerType === "company") {
+          const companyFields = ["companyName", "natureOfBusiness", "gstForm"];
+          companyFields.forEach((field) => {
+            if (!data[field] || String(data[field]).trim() === "")
+              missing.push(field);
+          });
+        } else {
+          const individualFields = ["tradeLicense", "educationDocuments"];
+          individualFields.forEach((field) => {
+            if (!data[field] || String(data[field]).trim() === "")
+              missing.push(field);
+          });
+        }
+
+        if (missing.length > 0) {
+          setMissingItems(missing);
+          setBlockMessage(
+            "You must complete your profile and upload all required verification documents before you can post a job.",
+          );
+          setPageAccess("incomplete");
+          return;
+        }
+
+        // If everything passes, unlock the form
+        setPageAccess("granted");
+      } catch (err) {
+        console.error("Eligibility check failed:", err);
+        alert("Session expired or invalid. Please log in again.");
+        localStorage.removeItem("employerInfo");
+        navigate("/login");
+      }
+    };
+
+    checkEligibility();
+  }, [navigate]);
 
   useEffect(() => {
     if (locationState?.repostData) {
@@ -536,6 +630,102 @@ export default function CreateJob() {
     return `${base} ${touched[fieldName] && errors[fieldName] ? "border-red-500 focus:ring-red-200 bg-red-50" : "border-gray-200 focus:border-blue-500 focus:ring-blue-100 bg-gray-50 focus:bg-white"}`;
   };
 
+  // ==========================================
+  // FACT: SECURITY BARRIER RENDERING
+  // ==========================================
+  if (pageAccess === "checking") {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50 flex-col gap-4">
+        <Loader2 className="animate-spin text-indigo-600" size={48} />
+        <p className="text-slate-500 font-bold animate-pulse">
+          Verifying account eligibility...
+        </p>
+      </div>
+    );
+  }
+
+  if (pageAccess === "blocked") {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-200 p-8 text-center">
+          <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="text-rose-600" size={32} />
+          </div>
+          <h2 className="text-2xl font-extrabold text-slate-900 mb-3">
+            Access Denied
+          </h2>
+          <p className="text-slate-600 font-medium mb-8 leading-relaxed">
+            {blockMessage}
+          </p>
+          <button
+            onClick={() => navigate("/employerdashboard")}
+            className="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (pageAccess === "incomplete") {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50 p-4">
+        <div className="max-w-lg w-full bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+              <FileText className="text-amber-600" size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-slate-900">
+                Profile Incomplete
+              </h2>
+              <p className="text-sm text-slate-500 font-medium mt-1">
+                Missing required data
+              </p>
+            </div>
+          </div>
+          <p className="text-slate-600 font-medium mb-6 leading-relaxed">
+            {blockMessage}
+          </p>
+
+          <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 mb-8 max-h-48 overflow-y-auto">
+            <ul className="space-y-2">
+              {missingItems.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-center gap-2 text-sm font-bold text-rose-600"
+                >
+                  <X size={16} />{" "}
+                  {item
+                    .replace(/([A-Z])/g, " $1")
+                    .trim()
+                    .toUpperCase()}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate("/employereditprofile")}
+              className="flex-1 bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 text-center"
+            >
+              Edit Profile
+            </button>
+            <button
+              onClick={() => navigate("/employerdocupload")}
+              className="flex-1 bg-blue-50 text-blue-700 border border-blue-200 py-3.5 rounded-xl font-bold hover:bg-blue-100 transition text-center"
+            >
+              Upload Docs
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If pageAccess === "granted", it skips the barriers and renders your form below
   return (
     <div className="flex flex-col py-20 md:flex-row gap-10 p-8 bg-gray-50 min-h-screen">
       <div className="w-full md:w-1/2 bg-white p-8 rounded-2xl shadow-lg border border-gray-100 overflow-y-auto">

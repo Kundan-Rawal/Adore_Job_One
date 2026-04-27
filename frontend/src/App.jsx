@@ -219,6 +219,32 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/jobs"
+          element={
+            <ProtectedRoute>
+              <Jobs />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/job/JobsAroundMe" element={<TestLocation />} />
+        <Route
+          path="/services"
+          element={
+            <ProtectedRoute>
+              <Services />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/job/JobsAroundMe" element={<TestLocation />} />
+        <Route
+          path="/services"
+          element={
+            <ProtectedRoute>
+              <Services />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/job/JobsAroundMe" element={<TestLocation />} />
       </Routes>
     </Router>
