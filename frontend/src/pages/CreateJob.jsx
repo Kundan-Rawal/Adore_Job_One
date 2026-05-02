@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import axios from "axios";
+import Editor from "react-simple-wysiwyg";
 import JobPreviewCard from "../components/JobPreviewCard.jsx";
 import LocationPicker from "../components/LocationPicker.jsx";
 import JobConfirmModal from "../components/JobConfirmModal.jsx";
@@ -12,34 +13,34 @@ import SkillSuggestionsDropdown from "../components/SkillSuggestionsDropdown.jsx
 import {
   MapPin,
   Loader2,
-  IndianRupee,
   Users,
   Monitor,
   Building,
   FileText,
-  ListChecks,
   Plus,
   X,
   Globe,
   Zap,
   Calendar,
+  HelpCircle,
+  AlertTriangle,
 } from "lucide-react";
 
 const getDefaultDeadline = () => {
   const date = new Date();
   date.setDate(date.getDate() + 15);
-  return date.toISOString().split("T")[0]; // "YYYY-MM-DD"
+  return date.toISOString().split("T")[0];
 };
 
 const getMinDeadline = () => {
   const date = new Date();
-  date.setDate(date.getDate() + 1); // minimum 1 day from today
+  date.setDate(date.getDate() + 1);
   return date.toISOString().split("T")[0];
 };
 
 const getMaxDeadline = () => {
   const date = new Date();
-  date.setMonth(date.getMonth() + 1); // maximum 1 month from today
+  date.setMonth(date.getMonth() + 1);
   return date.toISOString().split("T")[0];
 };
 
@@ -56,10 +57,12 @@ export default function CreateJob() {
     workDaysPattern: "Mon to Fri",
     customWorkDaysDescription: "",
     mode: ["Work from office"],
-    salaryAmount: "",
+    salaryMin: "",
+    salaryMax: "",
     salaryFrequency: "Month",
     salaryCurrency: "INR",
     incentives: [],
+    screeningQuestions: [],
     startDate: "",
     endDate: "",
     applicationDeadline: getDefaultDeadline(),
@@ -81,10 +84,12 @@ export default function CreateJob() {
     latitude: null,
     longitude: null,
   });
-  const [isUnpaid, setIsUnpaid] = useState(false); // FACT: Unpaid toggle state
+
+  const [isUnpaid, setIsUnpaid] = useState(false);
   const [jobSummary, setJobSummary] = useState("");
   const [keyResponsibilities, setKeyResponsibilities] = useState("");
   const [customPerkInput, setCustomPerkInput] = useState("");
+  const [newQuestion, setNewQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(false);
   const [step, setStep] = useState(1);
@@ -92,7 +97,6 @@ export default function CreateJob() {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [showConfirm, setShowConfirm] = useState(false);
-  const [currency, setCurrency] = useState("INR");
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [currencySearch, setCurrencySearch] = useState("");
   const [pageAccess, setPageAccess] = useState("checking");
@@ -121,8 +125,6 @@ export default function CreateJob() {
     { code: "INR", iso: "in", name: "Indian Rupee", sym: "₹" },
     { code: "USD", iso: "us", name: "US Dollar", sym: "$" },
     { code: "EUR", iso: "eu", name: "Euro", sym: "€" },
-    { code: "JPY", iso: "jp", name: "Japanese Yen", sym: "¥" },
-    { code: "CNY", iso: "cn", name: "Chinese Yuan", sym: "¥" },
     { code: "AED", iso: "ae", name: "UAE Dirham", sym: "د.إ" },
   ];
   const REST_CURRENCIES = [
@@ -130,38 +132,6 @@ export default function CreateJob() {
     { code: "AUD", iso: "au", name: "Australian Dollar", sym: "A$" },
     { code: "CAD", iso: "ca", name: "Canadian Dollar", sym: "C$" },
     { code: "SGD", iso: "sg", name: "Singapore Dollar", sym: "S$" },
-    { code: "CHF", iso: "ch", name: "Swiss Franc", sym: "Fr" },
-    { code: "HKD", iso: "hk", name: "Hong Kong Dollar", sym: "HK$" },
-    { code: "KRW", iso: "kr", name: "South Korean Won", sym: "₩" },
-    { code: "SAR", iso: "sa", name: "Saudi Riyal", sym: "ر.س" },
-    { code: "QAR", iso: "qa", name: "Qatari Riyal", sym: "ر.ق" },
-    { code: "KWD", iso: "kw", name: "Kuwaiti Dinar", sym: "د.ك" },
-    { code: "BHD", iso: "bh", name: "Bahraini Dinar", sym: ".د.ب" },
-    { code: "OMR", iso: "om", name: "Omani Rial", sym: "ر.ع." },
-    { code: "MYR", iso: "my", name: "Malaysian Ringgit", sym: "RM" },
-    { code: "THB", iso: "th", name: "Thai Baht", sym: "฿" },
-    { code: "IDR", iso: "id", name: "Indonesian Rupiah", sym: "Rp" },
-    { code: "PHP", iso: "ph", name: "Philippine Peso", sym: "₱" },
-    { code: "VND", iso: "vn", name: "Vietnamese Dong", sym: "₫" },
-    { code: "PKR", iso: "pk", name: "Pakistani Rupee", sym: "₨" },
-    { code: "BDT", iso: "bd", name: "Bangladeshi Taka", sym: "৳" },
-    { code: "NPR", iso: "np", name: "Nepalese Rupee", sym: "₨" },
-    { code: "LKR", iso: "lk", name: "Sri Lankan Rupee", sym: "₨" },
-    { code: "TRY", iso: "tr", name: "Turkish Lira", sym: "₺" },
-    { code: "ZAR", iso: "za", name: "South African Rand", sym: "R" },
-    { code: "NGN", iso: "ng", name: "Nigerian Naira", sym: "₦" },
-    { code: "EGP", iso: "eg", name: "Egyptian Pound", sym: "£" },
-    { code: "KES", iso: "ke", name: "Kenyan Shilling", sym: "KSh" },
-    { code: "BRL", iso: "br", name: "Brazilian Real", sym: "R$" },
-    { code: "MXN", iso: "mx", name: "Mexican Peso", sym: "$" },
-    { code: "ARS", iso: "ar", name: "Argentine Peso", sym: "$" },
-    { code: "CLP", iso: "cl", name: "Chilean Peso", sym: "$" },
-    { code: "RUB", iso: "ru", name: "Russian Ruble", sym: "₽" },
-    { code: "PLN", iso: "pl", name: "Polish Zloty", sym: "zł" },
-    { code: "SEK", iso: "se", name: "Swedish Krona", sym: "kr" },
-    { code: "NOK", iso: "no", name: "Norwegian Krone", sym: "kr" },
-    { code: "DKK", iso: "dk", name: "Danish Krone", sym: "kr" },
-    { code: "ILS", iso: "il", name: "Israeli Shekel", sym: "₪" },
   ];
   const CURRENCIES = [...TOP_CURRENCIES, ...REST_CURRENCIES];
 
@@ -175,104 +145,66 @@ export default function CreateJob() {
   }, []);
 
   useEffect(() => {
+    let heartbeatInterval; // We will use this to keep the token alive/checked
+
     const checkEligibility = async () => {
       try {
         const storedData = localStorage.getItem("employerInfo");
-        if (!storedData) {
-          navigate("/login");
-          return;
-        }
+        if (!storedData) return navigate("/login");
+        const { token } = JSON.parse(storedData);
+        if (!token) return navigate("/login");
 
-        const { token, id, employerId } = JSON.parse(storedData);
-        const targetId = employerId || id;
-
-        if (!token) {
-          navigate("/login");
-          return;
-        }
-
+        // FACT: Hit the new Light API instead of the full profile
         const { data } = await axios.get(
-          `https://jobone-mrpy.onrender.com/employer/profile/${targetId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          `https://jobone-mrpy.onrender.com/employer/check-eligibility`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        // 1. Admin Approval Check
-        if (data.isApproved === "pending") {
-          setBlockMessage(
-            "Your account is currently under review by the administration. You will be able to post jobs once you are approved.",
-          );
+        if (data.access === "blocked") {
+          setBlockMessage(data.message);
           setPageAccess("blocked");
-          return;
-        }
-        if (data.isApproved === "rejected") {
-          setBlockMessage(
-            "Your account has been rejected by the administration. You do not have permission to post jobs.",
-          );
-          setPageAccess("blocked");
-          return;
-        }
-
-        // 2. Strict Document & Profile Check (Mirrors the Backend Controller)
-        let missing = [];
-        const baseFields = [
-          "phone",
-          "location",
-          "industry",
-          "description",
-          "aadharCard",
-          "panCard",
-        ];
-        baseFields.forEach((field) => {
-          if (!data[field] || String(data[field]).trim() === "")
-            missing.push(field);
-        });
-
-        if (data.employerType === "company") {
-          const companyFields = ["companyName", "natureOfBusiness", "gstForm"];
-          companyFields.forEach((field) => {
-            if (!data[field] || String(data[field]).trim() === "")
-              missing.push(field);
-          });
-        } else {
-          const individualFields = ["tradeLicense", "educationDocuments"];
-          individualFields.forEach((field) => {
-            if (!data[field] || String(data[field]).trim() === "")
-              missing.push(field);
-          });
-        }
-
-        if (missing.length > 0) {
-          setMissingItems(missing);
-          setBlockMessage(
-            "You must complete your profile and upload all required verification documents before you can post a job.",
-          );
+        } else if (data.access === "incomplete") {
+          setMissingItems(data.missingItems);
+          setBlockMessage(data.message);
           setPageAccess("incomplete");
-          return;
+        } else {
+          setPageAccess("granted");
         }
-
-        // If everything passes, unlock the form
-        setPageAccess("granted");
       } catch (err) {
         console.error("Eligibility check failed:", err);
-        alert("Session expired or invalid. Please log in again.");
-        localStorage.removeItem("employerInfo");
-        navigate("/login");
+        // If it's a 401 Unauthorized, the token is dead
+        if (err.response && err.response.status === 401) {
+            alert("Your session has expired. Please log in again.");
+            localStorage.removeItem("employerInfo");
+            navigate("/login");
+        }
       }
     };
 
+    // 1. Check immediately on page load
     checkEligibility();
+
+    // 2. THE HEARTBEAT: Check silently every 5 minutes (300000 ms)
+    // If their token dies while they are typing, this will kick them out BEFORE they hit submit and get confused.
+    heartbeatInterval = setInterval(() => {
+        checkEligibility();
+    }, 300000); 
+
+    // Cleanup interval when they leave the page
+    return () => clearInterval(heartbeatInterval);
   }, [navigate]);
 
+  
   useEffect(() => {
     if (locationState?.repostData) {
       const d = locationState.repostData;
       let parsedSummary = "";
       let parsedResponsibilities = "";
       if (d.description) {
-        const parts = d.description.split("Key Responsibilities:");
-        parsedSummary = parts[0].replace("Job Summary:", "").trim();
+        const parts = d.description.split("<h3>Key Responsibilities</h3>");
+        parsedSummary = parts[0]
+          ? parts[0].replace("<h3>Job Summary</h3>", "").trim()
+          : "";
         parsedResponsibilities = parts[1] ? parts[1].trim() : "";
       }
 
@@ -285,15 +217,17 @@ export default function CreateJob() {
         workDaysPattern: d.workDaysPattern || "Mon to Fri",
         customWorkDaysDescription: d.customWorkDaysDescription || "",
         mode: d.mode?.length ? d.mode : ["Work from office"],
-        salaryAmount: d.salaryAmount || "",
+        salaryMin: d.salaryMin || "",
+        salaryMax: d.salaryMax || "",
         salaryFrequency: d.salaryFrequency || "Month",
-        incentives: Array.isArray(d.incentives)
-          ? d.incentives
-          : d.incentives
-            ? [d.incentives]
-            : [],
-        startDate: "",
-        endDate: "",
+        incentives: Array.isArray(d.incentives) ? d.incentives : [],
+        screeningQuestions: d.screeningQuestions || [],
+        startDate: d.startDate
+          ? new Date(d.startDate).toISOString().split("T")[0]
+          : "",
+        endDate: d.endDate
+          ? new Date(d.endDate).toISOString().split("T")[0]
+          : "",
         applicationDeadline: getDefaultDeadline(),
         isFlexibleDuration: d.isFlexibleDuration || false,
         shifts:
@@ -369,20 +303,23 @@ export default function CreateJob() {
     });
   };
 
-  const addTag = (field, inputState, setInputState) => {
-    if (inputState.trim() !== "" && !job[field].includes(inputState.trim())) {
+  const handleAddQuestion = () => {
+    if (
+      newQuestion.trim() &&
+      !job.screeningQuestions.includes(newQuestion.trim())
+    ) {
       setJob((prev) => ({
         ...prev,
-        [field]: [...prev[field], inputState.trim()],
+        screeningQuestions: [...prev.screeningQuestions, newQuestion.trim()],
       }));
+      setNewQuestion("");
     }
-    setInputState("");
   };
 
-  const removeTag = (field, index) => {
+  const handleRemoveQuestion = (index) => {
     setJob((prev) => ({
       ...prev,
-      [field]: prev[field].filter((_, i) => i !== index),
+      screeningQuestions: prev.screeningQuestions.filter((_, i) => i !== index),
     }));
   };
 
@@ -406,6 +343,7 @@ export default function CreateJob() {
         },
       ],
     }));
+
   const removeShift = (index) =>
     setJob((prev) => ({
       ...prev,
@@ -413,6 +351,7 @@ export default function CreateJob() {
         .filter((_, i) => i !== index)
         .map((s, i) => ({ ...s, shiftName: `Shift ${i + 1}` })),
     }));
+
   const blockManualInput = (e) => {
     e.preventDefault();
   };
@@ -430,8 +369,8 @@ export default function CreateJob() {
       errorMsg = "Select at least one job type";
     if (name === "mode" && value.length === 0)
       errorMsg = "Select at least one work mode";
-    if (name === "salaryAmount" && !value)
-      errorMsg = "Salary amount is required";
+    if (name === "salaryMin" && !isUnpaid && !value)
+      errorMsg = "Minimum salary is required";
     if (name === "noOfPeopleRequired" && !value) errorMsg = "Openings required";
     if (
       name === "workDaysPattern" &&
@@ -484,8 +423,16 @@ export default function CreateJob() {
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
+      // The AI endpoint might return markdown, but we want it inside our Rich Text editor.
+      // This simple mapping helps it render nicely.
+      let formattedRes = data.responsibilities
+        .split("\n")
+        .filter((l) => l.trim() !== "")
+        .map((l) => `<li>${l.replace(/[-*]\s*/, "")}</li>`)
+        .join("");
+
       await typeWriterEffect(data.summary, setJobSummary, 10);
-      await typeWriterEffect(data.responsibilities, setKeyResponsibilities, 10);
+      setKeyResponsibilities(`<ul>${formattedRes}</ul>`);
     } catch (error) {
       console.error("AI generation failed:", error);
       alert("Failed to generate AI content.");
@@ -501,7 +448,7 @@ export default function CreateJob() {
       title: true,
       jobType: true,
       mode: true,
-      salaryAmount: true,
+      salaryMin: true,
       noOfPeopleRequired: true,
     };
 
@@ -517,8 +464,8 @@ export default function CreateJob() {
       newErrors.mode = "Select mode";
       isValid = false;
     }
-    if (!job.salaryAmount) {
-      newErrors.salaryAmount = "Required";
+    if (!isUnpaid && !job.salaryMin) {
+      newErrors.salaryMin = "Required";
       isValid = false;
     }
     if (!job.noOfPeopleRequired) {
@@ -571,28 +518,33 @@ export default function CreateJob() {
       const token = storedData ? JSON.parse(storedData).token : null;
       if (!token) return alert("No token found. Please log in again.");
 
-      const formattedResponsibilities = keyResponsibilities
-        .split("\n")
-        .filter((line) => line.trim() !== "")
-        .map((line) => {
-          const trimmed = line.trim();
-          return trimmed.startsWith("-") || trimmed.startsWith("•")
-            ? trimmed
-            : `• ${trimmed}`;
-        })
-        .join("\n");
+      const combinedDescription = `<h3>Job Summary</h3>${jobSummary}<h3>Key Responsibilities</h3>${keyResponsibilities}`;
 
-      const combinedDescription =
-        `Job Summary:\n${jobSummary}\n\nKey Responsibilities:\n${formattedResponsibilities}`.trim();
+      const parsedMin = isUnpaid
+        ? 0
+        : job.salaryMin === ""
+          ? 0
+          : Number(job.salaryMin);
+      const parsedMax = isUnpaid
+        ? 0
+        : job.salaryMax === ""
+          ? 0
+          : Number(job.salaryMax);
+
+      if (!isUnpaid && (parsedMin === 0 || parsedMax === 0)) {
+        alert("Please enter a valid minimum and maximum salary.");
+        setLoading(false);
+        return;
+      }
 
       const payload = {
         ...job,
         description: combinedDescription,
-        salaryAmount: Number(job.salaryAmount),
+        salaryMin: parsedMin,
+        salaryMax: parsedMax,
         noOfPeopleRequired: Number(job.noOfPeopleRequired),
       };
 
-      // FACT: Safely delete empty applicationDeadline so Mongoose doesn't throw Cast Error
       if (!payload.applicationDeadline) {
         delete payload.applicationDeadline;
       }
@@ -630,9 +582,7 @@ export default function CreateJob() {
     return `${base} ${touched[fieldName] && errors[fieldName] ? "border-red-500 focus:ring-red-200 bg-red-50" : "border-gray-200 focus:border-blue-500 focus:ring-blue-100 bg-gray-50 focus:bg-white"}`;
   };
 
-  // ==========================================
-  // FACT: SECURITY BARRIER RENDERING
-  // ==========================================
+  // --- SECURITY BARRIERS ---
   if (pageAccess === "checking") {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50 flex-col gap-4">
@@ -688,7 +638,6 @@ export default function CreateJob() {
           <p className="text-slate-600 font-medium mb-6 leading-relaxed">
             {blockMessage}
           </p>
-
           <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 mb-8 max-h-48 overflow-y-auto">
             <ul className="space-y-2">
               {missingItems.map((item) => (
@@ -705,11 +654,10 @@ export default function CreateJob() {
               ))}
             </ul>
           </div>
-
           <div className="flex gap-3">
             <button
               onClick={() => navigate("/employereditprofile")}
-              className="flex-1 bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 text-center"
+              className="flex-1 bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg text-center"
             >
               Edit Profile
             </button>
@@ -725,7 +673,6 @@ export default function CreateJob() {
     );
   }
 
-  // If pageAccess === "granted", it skips the barriers and renders your form below
   return (
     <div className="flex flex-col py-20 md:flex-row gap-10 p-8 bg-gray-50 min-h-screen">
       <div className="w-full md:w-1/2 bg-white p-8 rounded-2xl shadow-lg border border-gray-100 overflow-y-auto">
@@ -828,6 +775,7 @@ export default function CreateJob() {
                   "full-time",
                   "contractual",
                   "freelance",
+                  "volunteer opportunity",
                 ].map((type) => {
                   const isSelected = job.jobType.includes(type);
                   return (
@@ -852,7 +800,7 @@ export default function CreateJob() {
                 Work Days <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                {["Mon to Fri", "Mon to Sat", "Sat and Sun", "Custom"].map(
+                {["Mon to Fri", "Mon to Sat", "Sat to Sun", "Custom"].map(
                   (pattern) => (
                     <label
                       key={pattern}
@@ -884,37 +832,41 @@ export default function CreateJob() {
             </div>
 
             <div className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-2xl space-y-4">
-              <label className="block text-sm font-bold text-green-900">
-                Compensation <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                {["Hour", "Day", "Week", "Month", "Year", "Lump-Sum"].map(
-                  (freq) => (
-                    <label
-                      key={freq}
-                      className={`cursor-pointer py-2 px-1 text-center text-[10px] font-extrabold uppercase tracking-wide rounded-lg border transition-all ${job.salaryFrequency === freq ? "bg-green-600 text-white border-green-600 shadow-md" : "bg-white text-green-700 border-green-200 hover:bg-green-100"}`}
-                    >
-                      <input
-                        type="radio"
-                        name="salaryFrequency"
-                        value={freq}
-                        checked={job.salaryFrequency === freq}
-                        onChange={handleChange}
-                        className="hidden"
-                      />
-                      {freq}
-                    </label>
-                  ),
-                )}
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-bold text-green-900">
+                  Compensation Range <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    id="unpaid-check"
+                    checked={isUnpaid}
+                    onChange={(e) => {
+                      setIsUnpaid(e.target.checked);
+                      if (e.target.checked)
+                        setJob((prev) => ({
+                          ...prev,
+                          salaryMin: "",
+                          salaryMax: "",
+                        }));
+                    }}
+                    className="accent-green-600 cursor-pointer"
+                  />
+                  <label
+                    htmlFor="unpaid-check"
+                    className="text-xs font-bold text-green-700 cursor-pointer"
+                  >
+                    Unpaid / Volunteer
+                  </label>
+                </div>
               </div>
-              {/* Currency + Amount row */}
-              <div className="flex gap-2 items-stretch">
-                {/* Currency Dropdown */}
+
+              <div className="flex gap-2 items-center">
                 <div className="relative" ref={currencyRef}>
                   <button
                     type="button"
                     onClick={() => setCurrencyOpen((o) => !o)}
-                    className="flex items-center gap-1.5 h-full px-3 border border-green-200 rounded-xl bg-white text-sm font-bold text-gray-700 hover:bg-green-50 min-w-[88px]"
+                    className="flex items-center gap-1.5 h-11 px-3 border border-green-200 rounded-xl bg-white text-sm font-bold text-gray-700 hover:bg-green-50 min-w-[88px]"
                   >
                     <img
                       src={flagUrl(
@@ -925,11 +877,9 @@ export default function CreateJob() {
                       height={15}
                       style={{ borderRadius: 2, objectFit: "cover" }}
                       alt={job.salaryCurrency}
-                    />{" "}
+                    />
                     <span>{job.salaryCurrency}</span>
-                    <span className="text-gray-400 text-xs ml-auto">▾</span>
                   </button>
-
                   {currencyOpen && (
                     <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg w-56 max-h-64 overflow-y-auto">
                       <input
@@ -940,7 +890,6 @@ export default function CreateJob() {
                         placeholder="Search..."
                         className="w-full px-3 py-2 text-xs border-b border-gray-100 outline-none"
                       />
-                      {/* Top 6 */}
                       {TOP_CURRENCIES.filter(
                         (c) =>
                           c.code
@@ -970,13 +919,12 @@ export default function CreateJob() {
                               flexShrink: 0,
                             }}
                             alt={c.code}
-                          />{" "}
+                          />
                           <span className="font-bold w-8">{c.code}</span>
                           <span className="text-gray-400">{c.name}</span>
                         </button>
                       ))}
                       <div className="border-t border-gray-100 my-1" />
-                      {/* Rest */}
                       {REST_CURRENCIES.filter(
                         (c) =>
                           c.code
@@ -1006,7 +954,7 @@ export default function CreateJob() {
                               flexShrink: 0,
                             }}
                             alt={c.code}
-                          />{" "}
+                          />
                           <span className="font-bold w-8">{c.code}</span>
                           <span className="text-gray-400">{c.name}</span>
                         </button>
@@ -1015,68 +963,48 @@ export default function CreateJob() {
                   )}
                 </div>
 
-                {/* Amount input */}
-                {/* FACT: Unpaid Checkbox & Amount input */}
-                <div className="relative flex-1">
-                  <div className="absolute right-0 -top-6 flex items-center gap-1.5">
-                    <input
-                      type="checkbox"
-                      id="unpaid-check"
-                      checked={isUnpaid}
-                      onChange={(e) => {
-                        setIsUnpaid(e.target.checked);
-                        if (e.target.checked) {
-                          setJob((prev) => ({ ...prev, salaryAmount: 0 }));
-                        } else {
-                          setJob((prev) => ({ ...prev, salaryAmount: "" }));
-                        }
-                      }}
-                      className="accent-green-600 cursor-pointer"
-                    />
-                    <label
-                      htmlFor="unpaid-check"
-                      className="text-xs font-bold text-green-700 cursor-pointer"
-                    >
-                      Unpaid/Volunteer
-                    </label>
-                  </div>
-
-                  {!isUnpaid && (
-                    <span className="absolute left-3 top-3.5 text-green-600 text-sm">
-                      {CURRENCIES.find((c) => c.code === job.salaryCurrency)
-                        ?.sym ?? "₹"}
-                    </span>
-                  )}
+                <div className="flex-1 flex items-center gap-2">
                   <input
                     type="number"
-                    name="salaryAmount"
-                    value={isUnpaid ? 0 : job.salaryAmount}
+                    placeholder="Min"
                     disabled={isUnpaid}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === "") {
-                        setJob((prev) => ({ ...prev, salaryAmount: "" }));
-                        if (touched.salaryAmount)
-                          validateField("salaryAmount", "");
-                        return;
-                      }
-                      const num = parseInt(val, 10);
-                      if (num >= 0 && num <= 99999999) {
-                        setJob((prev) => ({ ...prev, salaryAmount: num }));
-                        if (touched.salaryAmount)
-                          validateField("salaryAmount", num);
-                      }
-                    }}
-                    onBlur={handleBlur}
-                    onKeyDown={(e) => {
-                      if (["-", "+", ".", "e"].includes(e.key))
-                        e.preventDefault();
-                    }}
-                    placeholder={`Amount in (${job.salaryFrequency})`}
-                    className={`w-full p-3 ${isUnpaid ? "px-4 bg-green-50 text-green-600 font-bold" : "pl-8"} border rounded-xl outline-none transition-all ${touched.salaryAmount && errors.salaryAmount ? "border-red-400 bg-red-50" : "border-green-200 focus:ring-2 focus:ring-green-300"}`}
+                    value={job.salaryMin}
+                    onChange={(e) =>
+                      setJob((prev) => ({ ...prev, salaryMin: e.target.value }))
+                    }
+                    className="w-full p-2.5 border border-green-200 rounded-xl outline-none focus:ring-2 focus:ring-green-300 disabled:bg-green-100/50"
+                  />
+                  <span className="text-green-600 font-bold">-</span>
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    disabled={isUnpaid}
+                    value={job.salaryMax}
+                    onChange={(e) =>
+                      setJob((prev) => ({ ...prev, salaryMax: e.target.value }))
+                    }
+                    className="w-full p-2.5 border border-green-200 rounded-xl outline-none focus:ring-2 focus:ring-green-300 disabled:bg-green-100/50"
                   />
                 </div>
+
+                <select
+                  value={job.salaryFrequency}
+                  onChange={(e) =>
+                    setJob((prev) => ({
+                      ...prev,
+                      salaryFrequency: e.target.value,
+                    }))
+                  }
+                  className="p-2.5 border border-green-200 rounded-xl outline-none bg-white text-sm font-bold text-green-800"
+                >
+                  <option value="Month">/ Month</option>
+                  <option value="Year">/ Year</option>
+                  <option value="Hour">/ Hour</option>
+                  <option value="Lump-Sum">Lump-Sum</option>
+                </select>
               </div>
+
+              {/* Perks */}
               <div>
                 <label className="block text-xs font-semibold text-green-800 mb-2">
                   Perks & Benefits (Optional)
@@ -1088,28 +1016,21 @@ export default function CreateJob() {
                       <button
                         key={perk.value}
                         type="button"
-                        onClick={() => {
+                        onClick={() =>
                           setJob((prev) => ({
                             ...prev,
                             incentives: isSelected
                               ? prev.incentives.filter((i) => i !== perk.value)
                               : [...prev.incentives, perk.value],
-                          }));
-                        }}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                          isSelected
-                            ? "bg-green-600 text-white border-green-600 shadow-sm"
-                            : "bg-white text-green-700 border-green-200 hover:bg-green-50"
-                        }`}
+                          }))
+                        }
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${isSelected ? "bg-green-600 text-white border-green-600 shadow-sm" : "bg-white text-green-700 border-green-200 hover:bg-green-50"}`}
                       >
-                        <span>{perk.icon}</span>
-                        {perk.value}
+                        <span>{perk.icon}</span> {perk.value}
                       </button>
                     );
                   })}
                 </div>
-
-                {/* Custom perk input */}
                 <div className="flex gap-2 mt-3">
                   <input
                     type="text"
@@ -1148,8 +1069,6 @@ export default function CreateJob() {
                     Add
                   </button>
                 </div>
-
-                {/* Show custom perks as removable tags */}
                 {job.incentives.filter(
                   (i) => !PERKS_OPTIONS.map((p) => p.value).includes(i),
                 ).length > 0 && (
@@ -1163,7 +1082,7 @@ export default function CreateJob() {
                           key={idx}
                           className="flex items-center gap-1 bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-full text-xs font-semibold"
                         >
-                          {custom}
+                          {custom}{" "}
                           <button
                             type="button"
                             onClick={() =>
@@ -1185,6 +1104,59 @@ export default function CreateJob() {
               </div>
             </div>
 
+            <div className="p-5 bg-purple-50 border border-purple-100 rounded-2xl space-y-4">
+              <label className="block text-sm font-bold text-purple-900 flex items-center gap-2">
+                <HelpCircle size={18} /> Candidate Screening Questions
+              </label>
+              <p className="text-xs text-purple-700">
+                Add questions candidates must answer when applying (e.g., Notice
+                period? Willing to relocate?).
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newQuestion}
+                  onChange={(e) => setNewQuestion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddQuestion();
+                    }
+                  }}
+                  placeholder="Type a question..."
+                  className="flex-1 p-2.5 border border-purple-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-300"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddQuestion}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-purple-700"
+                >
+                  Add
+                </button>
+              </div>
+              {job.screeningQuestions.length > 0 && (
+                <ul className="space-y-2 mt-4">
+                  {job.screeningQuestions.map((q, idx) => (
+                    <li
+                      key={idx}
+                      className="flex justify-between items-center bg-white p-3 border border-purple-100 rounded-lg text-sm text-purple-900"
+                    >
+                      <span className="font-medium">
+                        {idx + 1}. {q}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveQuestion(idx)}
+                        className="text-red-400 hover:text-red-600"
+                      >
+                        <X size={16} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wide">
                 No. of Openings <span className="text-red-500">*</span>
@@ -1200,23 +1172,7 @@ export default function CreateJob() {
                   value={job.noOfPeopleRequired}
                   min={1}
                   max={9999}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "") {
-                      setJob((prev) => ({ ...prev, noOfPeopleRequired: "" }));
-                      return;
-                    }
-                    const num = parseInt(val, 10);
-                    if (num >= 1 && num <= 9999) {
-                      setJob((prev) => ({ ...prev, noOfPeopleRequired: num }));
-                    }
-                  }}
-                  onBlur={handleBlur}
-                  onKeyDown={(e) => {
-                    // block minus, plus, decimal point, e
-                    if (["-", "+", ".", "e"].includes(e.key))
-                      e.preventDefault();
-                  }}
+                  onChange={handleChange}
                   className={getInputClass("noOfPeopleRequired", true)}
                 />
               </div>
@@ -1231,7 +1187,6 @@ export default function CreateJob() {
               <h3 className="font-bold text-indigo-900 border-b border-indigo-200 pb-2">
                 Candidate Requirements
               </h3>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-bold text-indigo-800 mb-1.5 uppercase">
@@ -1329,13 +1284,12 @@ export default function CreateJob() {
                     <p className="text-[10px] text-indigo-400 mt-4">yrs</p>
                   </div>
                 </div>
-                {/* Experience — col-span-2 so it takes full width */}
+
                 <div className="col-span-1 md:col-span-2">
                   <label className="block text-xs font-bold text-indigo-800 mb-3 uppercase">
                     Experience Required
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Relevant Experience */}
                     <div className="p-3 bg-white border border-indigo-100 rounded-xl space-y-2">
                       <p className="text-xs font-bold text-indigo-700">
                         Relevant Field Experience
@@ -1398,7 +1352,6 @@ export default function CreateJob() {
                       </label>
                     </div>
 
-                    {/* Total Experience */}
                     <div className="p-3 bg-white border border-indigo-100 rounded-xl space-y-2">
                       <p className="text-xs font-bold text-indigo-700">
                         Total Work Experience
@@ -1462,6 +1415,7 @@ export default function CreateJob() {
                     </div>
                   </div>
                 </div>
+
                 <div>
                   <label className="block text-xs font-bold text-indigo-800 mb-1.5 uppercase">
                     Preferred Gender
@@ -1475,11 +1429,7 @@ export default function CreateJob() {
                     ].map((option) => (
                       <label
                         key={option.value}
-                        className={`cursor-pointer px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all ${
-                          job.genderPreference === option.value
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                            : "bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50"
-                        }`}
+                        className={`cursor-pointer px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all ${job.genderPreference === option.value ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50"}`}
                       >
                         <input
                           type="radio"
@@ -1531,7 +1481,7 @@ export default function CreateJob() {
                       checked={job.isFlexibleDuration}
                       onChange={handleChange}
                       className="rounded text-blue-600"
-                    />
+                    />{" "}
                     Flexible
                   </label>
                 </div>
@@ -1568,8 +1518,6 @@ export default function CreateJob() {
                       />
                     </div>
                   </div>
-
-                  {/* Application Deadline */}
                   <div className="pt-2 border-t border-gray-200">
                     <label className="text-[10px] text-rose-500 font-bold uppercase mb-1 block flex items-center gap-1">
                       <Calendar size={12} /> Application Deadline (Optional)
@@ -1595,6 +1543,7 @@ export default function CreateJob() {
                   </div>
                 </div>
               </div>
+
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <div className="flex justify-between items-center">
                   <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide">
@@ -1611,7 +1560,6 @@ export default function CreateJob() {
                     Flexible
                   </label>
                 </div>
-
                 {!job.isFlexibleShifts && (
                   <div className="space-y-2">
                     {job.shifts.map((shift, index) => (
@@ -1721,20 +1669,20 @@ export default function CreateJob() {
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
                     Job Summary <span className="text-red-500">*</span>
                   </label>
-                  <textarea
+                  <Editor
                     value={jobSummary}
                     onChange={(e) => setJobSummary(e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none h-24 text-sm"
+                    containerProps={{ style: { minHeight: "150px" } }}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
                     Key Responsibilities <span className="text-red-500">*</span>
                   </label>
-                  <textarea
+                  <Editor
                     value={keyResponsibilities}
                     onChange={(e) => setKeyResponsibilities(e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none h-24 text-sm"
+                    containerProps={{ style: { minHeight: "150px" } }}
                   />
                 </div>
               </div>
@@ -1755,7 +1703,7 @@ export default function CreateJob() {
                       checked={job.useOfficeLocation}
                       onChange={handleChange}
                       className="rounded text-indigo-600 focus:ring-indigo-500"
-                    />
+                    />{" "}
                     Same as Office Location
                   </label>
                 </h3>
@@ -1785,8 +1733,7 @@ export default function CreateJob() {
                 onClick={() => {
                   setJob({
                     ...job,
-                    description:
-                      `Job Summary:\n${jobSummary}\n\nKey Responsibilities:\n${keyResponsibilities}`.trim(),
+                    description: `<h3>Job Summary</h3>${jobSummary}<h3>Key Responsibilities</h3>${keyResponsibilities}`,
                   });
                   setPreview(true);
                 }}

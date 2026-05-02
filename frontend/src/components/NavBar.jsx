@@ -13,6 +13,7 @@ import {
   Building,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import LogoJobOne from "./LogoJobOne";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -94,7 +95,7 @@ export default function Navbar() {
       to={to}
       className={`relative font-semibold text-sm transition-colors duration-300 group ${
         scrolled
-          ? "text-slate-600 hover:text-blue-600"
+          ? "text-white/90 hover:text-white"
           : "text-white/90 hover:text-white"
       }`}
     >
@@ -112,25 +113,23 @@ export default function Navbar() {
       // FACT: True Glassmorphism uses extreme blur, boosted saturation, and translucent white edges.
       className={`fixed w-full z-[100] top-0 left-0 font-sans transition-all duration-500 ${
         scrolled || menuOpen
-          ? "bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border-b border-white/50 shadow-[0_4px_30px_rgba(0,0,0,0.08)] py-3"
-          : "bg-transparent py-5"
+          ? "bg-black/40 backdrop-blur-sm backdrop-saturate-200  "
+          : "bg-black/40 backdrop-blur-sm backdrop-saturate-200 "
       }`}
     >
-      <div className="container mx-auto px-6 lg:px-12 flex justify-between items-center">
+      <div className="container mx-auto px-5 lg:px-10 flex justify-between items-center">
         {/* Brand */}
         <Link
           to="/"
-          className={`text-2xl font-black tracking-tight flex items-center gap-1 group transition-colors duration-300 ${
-            scrolled ? "text-slate-900" : "text-white"
-          }`}
+          className="flex items-center transition-opacity duration-300 hover:opacity-80"
           onClick={() => setMenuOpen(false)}
         >
-          Job
-          <span
-            className={`transition-colors duration-300 ${scrolled ? "text-blue-600 group-hover:text-blue-500" : "text-blue-400 group-hover:text-white"}`}
-          >
-            One
-          </span>
+          <LogoJobOne
+            width={350}
+            height={200}
+            textColor={scrolled ? "#FFFFFF" : "#FFFFFF"}
+            className="h-15 md:h-25 w-auto"
+          />
         </Link>
 
         {/* --- DESKTOP MENU --- */}
@@ -155,7 +154,7 @@ export default function Navbar() {
                 className={`flex items-center gap-2 focus:outline-none transition-all px-3 py-1.5 rounded-full border ${
                   scrolled
                     ? "bg-white/50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 border-slate-200/50 hover:border-blue-200"
-                    : "bg-black/20 hover:bg-black/40 text-white border-white/20 hover:border-white/50 backdrop-blur-md"
+                    : "bg-white/50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 border-slate-200/50 hover:border-blue-200"
                 }`}
               >
                 <UserCircle
