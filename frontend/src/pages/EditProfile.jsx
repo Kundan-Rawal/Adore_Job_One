@@ -108,18 +108,49 @@ export default function EditProfile() {
           email: data.email || "",
           phone: data.phone || "",
           gender: data.gender || "",
-          description: data.description || "",
+          description: data.description || data.resumeData?.description || "",
           profilePicture: data.profilePicture || "",
           resumeFileKey: data.resumeFileKey || "",
         });
 
-        setSkills(safeList(data.skills));
-        setExperience(safeList(data.experience));
-        setEducation(safeList(data.education));
-        setProjects(safeList(data.projects));
-        setCertifications(safeList(data.certifications));
+        // FACT: Now intelligently checks resumeData fallback if manual arrays are empty
+        setSkills(
+          safeList(data.skills?.length ? data.skills : data.resumeData?.skills),
+        );
+        setExperience(
+          safeList(
+            data.experience?.length
+              ? data.experience
+              : data.resumeData?.experience,
+          ),
+        );
+        setEducation(
+          safeList(
+            data.education?.length
+              ? data.education
+              : data.resumeData?.education,
+          ),
+        );
+        setProjects(
+          safeList(
+            data.projects?.length ? data.projects : data.resumeData?.projects,
+          ),
+        );
+        setCertifications(
+          safeList(
+            data.certifications?.length
+              ? data.certifications
+              : data.resumeData?.certifications,
+          ),
+        );
         setPortfolioLinks(safeList(data.portfolioLinks));
-        setVolunteering(safeList(data.volunteering));
+        setVolunteering(
+          safeList(
+            data.volunteering?.length
+              ? data.volunteering
+              : data.resumeData?.volunteering,
+          ),
+        );
       } catch (error) {
         console.error("Error loading profile:", error);
       } finally {
@@ -147,7 +178,7 @@ export default function EditProfile() {
 
     try {
       const { data: s3Data } = await axios.post(
-        `https://jobone-mrpy.onrender.com/user/${userId}/resume/upload-url`,
+        `https://jobone-if7l.onrender.com/user/${userId}/resume/upload-url`,
         { fileType: file.type },
       );
       await fetch(s3Data.uploadUrl, {
@@ -156,7 +187,7 @@ export default function EditProfile() {
         headers: { "Content-Type": file.type },
       });
       await axios.post(
-        `https://jobone-mrpy.onrender.com/user/${userId}/resume/save-key`,
+        `https://jobone-if7l.onrender.com/user/${userId}/resume/save-key`,
         { key: s3Data.key },
       );
       setProfile((prev) => ({ ...prev, resumeFileKey: s3Data.key }));
@@ -165,7 +196,7 @@ export default function EditProfile() {
       formData.append("resume", file);
 
       const { data: parsedData } = await axios.post(
-        "https://jobone-mrpy.onrender.com/ai/parse-resume",
+        "https://jobone-if7l.onrender.com/ai/parse-resume",
         formData,
         {
           headers: {
@@ -182,8 +213,15 @@ export default function EditProfile() {
         setProfile((p) => ({ ...p, description: parsedData.description }));
       if (parsedData.skills)
         setSkills((p) => Array.from(new Set([...p, ...parsedData.skills])));
+
       if (parsedData.experience) setExperience(parsedData.experience);
       if (parsedData.education) setEducation(parsedData.education);
+
+      // FACT: Added missing state updates so AI extraction actually updates the frontend form!
+      if (parsedData.projects) setProjects(parsedData.projects);
+      if (parsedData.certifications)
+        setCertifications(parsedData.certifications);
+      if (parsedData.volunteering) setVolunteering(parsedData.volunteering);
 
       alert(
         "Resume parsed successfully! The original file has been securely saved for recruiters. Please review the auto-filled details below.",
@@ -276,7 +314,7 @@ export default function EditProfile() {
       };
 
       const { data } = await axios.patch(
-        `https://jobone-mrpy.onrender.com/user/${userId}`,
+        `https://jobone-if7l.onrender.com/user/${userId}`,
         payload,
         { headers: { Authorization: `Bearer ${storedUser.token}` } },
       );
@@ -304,7 +342,6 @@ export default function EditProfile() {
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans relative overflow-hidden selection:bg-orange-500/30">
-      {/* Custom CSS for Massive Thermal Lava Lamp Animations */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -326,14 +363,10 @@ export default function EditProfile() {
         }}
       />
 
-      {/* Giant Lava Blobs - Kept the exact same colors and sizes, but removed mix-blend-screen for white BG compatibility */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-white">
-        {/* Deep Red Base Blob */}
-        <div className="absolute -bottom-[20%] left-[-10%] w-[90vw] h-[90vw] bg-blue-500/60 filter blur-[100px] animate-lava-rise"></div>
-        {/* Bright Orange Morphing Blob */}
-        <div className="absolute -top-[10%] right-[-20%] w-[85vw] h-[85vw] bg-indigo-500/50 filter blur-[160px] animate-lava-fall animation-delay-2000"></div>
-        {/* Neon Pink/Yellow Center Blob */}
-        <div className="absolute top-[20%] left-[10%] w-[80vw] h-[80vw] bg-cyan-700/40 filter blur-[125px] animate-lava-rise animation-delay-5000"></div>
+        <div className="absolute -bottom-[20%] left-[-10%] w-[60vw] h-[60vw] bg-blue-500/60 filter blur-[100px] animate-lava-rise"></div>
+        <div className="absolute -top-[10%] right-[-20%] w-[55vw] h-[55vw] bg-blue-700/50 filter blur-[160px] animate-lava-fall animation-delay-2000"></div>
+        <div className="absolute top-[20%] left-[10%] w-[50vw] h-[50vw] bg-cyan-500/40 filter blur-[125px] animate-lava-rise animation-delay-5000"></div>
       </div>
 
       <div className="max-w-4xl mx-auto py-12 px-4 relative z-10">
