@@ -168,6 +168,7 @@ export default function CreateJob() {
   const [blockMessage, setBlockMessage] = useState("");
   const [missingItems, setMissingItems] = useState([]);
   const currencyRef = useRef(null);
+  const [isPostingDisabled, setIsPostingDisabled] = useState(false);
 
   const flagUrl = (iso) => `https://flagcdn.com/20x15/${iso}.png`;
 
@@ -210,53 +211,67 @@ export default function CreateJob() {
   }, []);
 
   useEffect(() => {
-    let heartbeatInterval; // We will use this to keep the token alive/checked
+    let isMounted = true;
 
     const checkEligibility = async () => {
       try {
         const storedData = localStorage.getItem("employerInfo");
         if (!storedData) return navigate("/login");
-        const { token } = JSON.parse(storedData);
-        if (!token) return navigate("/login");
 
-        // FACT: Hit the new Light API instead of the full profile
+        const { token } = JSON.parse(storedData);
+
         const { data } = await axios.get(
-          `https://jobone-mrpy.onrender.com/employer/check-eligibility`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          "https://jobone-mrpy.onrender.com/employer/check-eligibility",
+          { headers: { Authorization: `Bearer ${token}` } }
         );
+
+        if (!isMounted) return;
+
+        if (data.isFrozen) {
+          setIsPostingDisabled(true);
+          setBlockMessage("Your account is frozen. Posting new jobs is disabled.");
+          setPageAccess("granted"); // Allow page load
+          return;
+        }
 
         if (data.access === "blocked") {
           setBlockMessage(data.message);
-          setPageAccess("blocked");
-        } else if (data.access === "incomplete") {
+          setPageAccess("blocked"); // Kick out
+          return;
+        }
+
+        if (data.access === "incomplete") {
           setMissingItems(data.missingItems);
           setBlockMessage(data.message);
           setPageAccess("incomplete");
-        } else {
-          setPageAccess("granted");
+          return;
         }
+
+        setIsPostingDisabled(false);
+        setPageAccess("granted");
       } catch (err) {
         console.error("Eligibility check failed:", err);
-        // If it's a 401 Unauthorized, the token is dead
-        if (err.response && err.response.status === 401) {
-          alert("Your session has expired. Please log in again.");
+        if (!isMounted) return;
+        
+        // --- THIS FIX STOPS THE LOADING LOOP ---
+        if (err.response?.status === 401) {
           localStorage.removeItem("employerInfo");
           navigate("/login");
+        } else {
+          // If server error, show a message instead of spinning forever
+          setBlockMessage("Server error. Please try again later.");
+          setPageAccess("blocked"); 
         }
       }
     };
 
-    // 1. Check immediately on page load
     checkEligibility();
+    const interval = setInterval(checkEligibility, 300000); // 5 min heartbeat
 
-    // 2. THE HEARTBEAT: Check silently every 5 minutes (300000 ms)
-    // If their token dies while they are typing, this will kick them out BEFORE they hit submit and get confused.
-    heartbeatInterval = setInterval(() => {
-      checkEligibility();
-    }, 300000);
-
-    // Cleanup interval when they leave the page
-    return () => clearInterval(heartbeatInterval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [navigate]);
 
   useEffect(() => {
@@ -603,8 +618,6 @@ export default function CreateJob() {
       const token = storedData ? JSON.parse(storedData).token : null;
       if (!token) return alert("No token found. Please log in again.");
 
-      const combinedDescription = `<h3>Job Summary</h3>${jobSummary}<h3>Key Responsibilities</h3>${keyResponsibilities}`;
-
       const parsedMin = isUnpaid
         ? 0
         : job.salaryMin === ""
@@ -761,6 +774,12 @@ export default function CreateJob() {
 
   return (
     <div className="flex flex-col py-20 md:flex-row gap-10 p-8 bg-gray-50 min-h-screen">
+      {isPostingDisabled && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl mb-6 font-bold flex items-center gap-3">
+          <AlertTriangle size={20} />
+          {blockMessage}
+        </div>
+      )}
       <div className="w-full md:w-1/2 bg-white p-8 rounded-2xl shadow-lg border border-gray-100 overflow-y-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-gray-800">
@@ -1900,13 +1919,14 @@ export default function CreateJob() {
               </button>
               <button
                 onClick={() => setShowConfirm(true)}
-                disabled={loading}
-                className="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 disabled:bg-blue-300 font-bold shadow-lg shadow-blue-200 transition-all flex items-center gap-2"
+                disabled={loading || isPostingDisabled} // <--- THIS DISABLES THE BUTTON
+                className={`px-8 py-3 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 
+    ${isPostingDisabled ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-blue-200"}`}
               >
                 {loading ? (
                   <Loader2 className="animate-spin" size={18} />
-                ) : null}{" "}
-                Post Job
+                ) : null}
+                {isPostingDisabled ? "Posting Disabled" : "Post Job"}
               </button>
             </div>
           </div>
