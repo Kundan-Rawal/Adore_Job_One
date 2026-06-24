@@ -145,13 +145,21 @@ export default function Navbar() {
 
         {/* --- DESKTOP MENU --- */}
         <div className="hidden md:flex items-center space-x-8">
-          {!isAdmin && <NavLink to="/">Home</NavLink>}
+          {!isAdmin && (
+            <>
+              <NavLink to="/">Home</NavLink>
+              <NavLink to="/contact">Contact Us</NavLink>
+            </>
+          )}
 
           {activeRole === "guest" && (
             <>
+              <NavLink to="/jobs">Find Jobs</NavLink>
               <NavLink to="/employerregister">Post a Job</NavLink>
             </>
           )}
+
+          {isUser && <NavLink to="/jobs">Find Jobs</NavLink>}
 
           {isEmployer && <NavLink to="/createjob">Post a Job</NavLink>}
 
@@ -314,13 +322,22 @@ export default function Navbar() {
           >
             {/* Note: Mobile menu text is always dark since the dropdown background is white/glass */}
             {!isAdmin && (
-              <Link
-                to="/"
-                className="text-slate-700 font-bold text-lg hover:text-blue-600"
-                onClick={() => setMenuOpen(false)}
-              >
-                Home
-              </Link>
+              <>
+                <Link
+                  to="/"
+                  className="text-slate-700 font-bold text-lg hover:text-blue-600"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/contact"
+                  className="text-slate-700 font-bold text-lg hover:text-blue-600"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Contact Us
+                </Link>
+              </>
             )}
 
             {isAdmin && (
@@ -338,6 +355,13 @@ export default function Navbar() {
             {activeRole === "guest" && (
               <>
                 <div className="pt-6 border-t border-slate-100 flex flex-col gap-4">
+                  <Link
+                    to="/jobs"
+                    className="text-center w-full py-3 border-2 border-slate-200 rounded-2xl text-slate-700 font-bold hover:bg-slate-50 transition-colors"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Find Jobs
+                  </Link>
                   <Link
                     to="/login"
                     className="text-center w-full py-3 border-2 border-slate-200 rounded-2xl text-slate-700 font-bold hover:bg-slate-50 transition-colors"
@@ -391,6 +415,13 @@ export default function Navbar() {
 
             {isUser && (
               <>
+                <Link
+                  to="/jobs"
+                  className="text-slate-700 font-bold text-lg hover:text-blue-600"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Find Jobs
+                </Link>
                 <Link
                   to="/userdashboard"
                   className="text-slate-700 font-bold text-lg hover:text-blue-600"
