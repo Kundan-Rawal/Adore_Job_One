@@ -27,6 +27,8 @@ import {
 
 // Import your existing sub-components
 import Hero from "../userdashboard/Hero";
+import FeaturedJobs from "../userdashboard/FeaturedJobs";
+import Footer from "../components/Footer";
 import JobCategories from "../components/JobCategories";
 import JobsAroundMe from "../components/JobsAroundMe";
 import JobDetailsModal from "../components/JobDetailsModal"; // Import Modal
@@ -34,56 +36,87 @@ import JobDetailsModal from "../components/JobDetailsModal"; // Import Modal
 export default function Home() {
   const [featuredJobs, setFeaturedJobs] = useState([]);
   const [recommendedJobs, setRecommendedJobs] = useState([]);
+  const [allFetchedJobs, setAllFetchedJobs] = useState([]);
+  const [lastFetchedTime, setLastFetchedTime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null); // State for Modal
   const navigate = useNavigate();
 
-  // --- FETCH FEATURED & RECOMMENDED JOBS ---
-  useEffect(() => {
-    const fetchRecommendations = async (allJobsList) => {
-      try {
-        const stored = localStorage.getItem("userInfo");
-        if (!stored) return;
-        const token = JSON.parse(stored)?.token;
-        if (!token) return;
+  const fetchRecommendations = async (allJobsList, force = false) => {
+    try {
+      const stored = localStorage.getItem("userInfo");
+      if (!stored) return;
+      const token = JSON.parse(stored)?.token;
+      if (!token) return;
 
-        setLoadingRecommendations(true);
-        const { data } = await axios.get("https://jobone-if7l.onrender.com/ai/recommend-jobs", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+      if (!force) {
+        const cachedJobs = localStorage.getItem("aiRecommendedJobsCache");
+        const cachedTime = localStorage.getItem("aiRecommendedJobsTime");
+        if (cachedJobs && cachedTime) {
+          setRecommendedJobs(JSON.parse(cachedJobs));
+          setLastFetchedTime(cachedTime);
+          return;
+        }
+      }
 
-        if (data && data.recommendedJobs) {
-          const richRecommendations = data.recommendedJobs.map(aiJob => {
-            const fullJob = allJobsList.find(j => j._id === aiJob.jobId);
+      setLoadingRecommendations(true);
+      const { data } = await axios.get(
+        "https://jobone-if7l.onrender.com/ai/recommend-jobs",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (data && data.recommendedJobs) {
+        const richRecommendations = data.recommendedJobs
+          .map((aiJob) => {
+            const fullJob = allJobsList.find((j) => j._id === aiJob.jobId);
             return {
               ...fullJob,
               matchScore: aiJob.matchScore,
               reason: aiJob.reason,
               _id: aiJob.jobId,
-              title: fullJob?.title || aiJob.title
+              title: fullJob?.title || aiJob.title,
             };
-          }).filter(j => j.postedByCompany || j.postedByName); // Ensure we found the full job
+          })
+          .filter((j) => j.postedByCompany || j.postedByName); // Ensure we found the full job
 
-          setRecommendedJobs(richRecommendations);
-        }
-      } catch (err) {
-        console.error("Failed to fetch recommendations", err);
-      } finally {
-        setLoadingRecommendations(false);
+        setRecommendedJobs(richRecommendations);
+
+        const now = new Date().toLocaleString();
+        setLastFetchedTime(now);
+        localStorage.setItem("aiRecommendedJobsCache", JSON.stringify(richRecommendations));
+        localStorage.setItem("aiRecommendedJobsTime", now);
       }
-    };
+    } catch (err) {
+      console.error("Failed to fetch recommendations", err);
+    } finally {
+      setLoadingRecommendations(false);
+    }
+  };
 
+  const handleRefreshAI = () => {
+    localStorage.removeItem("aiRecommendedJobsCache");
+    localStorage.removeItem("aiRecommendedJobsTime");
+    if (allFetchedJobs.length > 0) {
+      fetchRecommendations(allFetchedJobs, true);
+    }
+  };
+
+  // --- FETCH FEATURED & RECOMMENDED JOBS ---
+  useEffect(() => {
     const fetchFeatured = async () => {
       try {
         const { data } = await axios.get(
-          "https://jobone-mrpy.onrender.com/jobs?limit=100"
+          "https://jobone-mrpy.onrender.com/jobs?limit=100",
         );
         const allJobs = data.data || data || [];
+        setAllFetchedJobs(allJobs);
 
         // Take the first 6 jobs as "Featured"
         setFeaturedJobs(allJobs.slice(0, 6));
-        
+
         // Fetch recommendations asynchronously
         fetchRecommendations(allJobs);
       } catch (err) {
@@ -104,55 +137,20 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-slate-50 text-slate-900">
+    <div className="min-h-screen flex flex-col font-sans bg-slate-50 text-slate-900 mt-[-80px]">
       {/* 1. HERO SECTION */}
       <div className="relative bg-white shadow-sm border-b border-slate-100 z-10">
         <Hero />
       </div>
 
-      {/* 2. STATS BANNER */}
-      <div className="bg-white py-10 border-b border-slate-200 hidden md:block">
-        <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-center gap-12 text-center">
-          <StatItem
-            icon={<Briefcase size={20} className="text-blue-600" />}
-            label="Live Jobs"
-            value="500+"
-          />
-          <StatItem
-            icon={<Building2 size={20} className="text-indigo-600" />}
-            label="Companies"
-            value="100+"
-          />
-          <StatItem
-            icon={<Users size={20} className="text-green-600" />}
-            label="Candidates"
-            value="1,000+"
-          />
-          <StatItem
-            icon={<Globe size={20} className="text-purple-600" />}
-            label="Locations"
-            value="50+"
-          />
-        </div>
-      </div>
 
       {/* MAIN CONTENT CONTAINER */}
       <div className="w-full">
         {/* 3. JOB CATEGORIES */}
-        <section className="py-20 px-4 sm:px-6 bg-white relative overflow-hidden">
-          {/* Decorative background element */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
-            <div className="absolute top-10 left-10 w-72 h-72 bg-blue-50 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-            <div className="absolute top-10 right-10 w-72 h-72 bg-purple-50 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-          </div>
-
-          <div className="max-w-7xl mx-auto relative z-10">
-              <JobCategories />
-          </div>
-        </section>
+        <JobCategories />
 
         {/* 4. JOBS NEAR ME */}
-        <section className="py-20 bg-slate-900 text-white relative overflow-hidden">
+        <section id="jobs-near-me" className="py-20 bg-slate-900 text-white relative overflow-hidden">
           <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-blue-600 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-0">
             <div className="flex flex-col md:flex-row items-end justify-between mb-10 gap-6">
@@ -175,22 +173,43 @@ export default function Home() {
 
         {/* RECOMMENDED JOBS (AI MATCHED) */}
         {loadingRecommendations ? (
-          <section className="py-16 px-4 sm:px-6 bg-indigo-50/50 border-y border-indigo-100 flex justify-center items-center">
-             <div className="flex items-center gap-2 text-indigo-600 font-bold">
-               <Sparkles size={20} className="animate-pulse" /> Generating AI Recommendations...
-             </div>
+          <section id="ai-recommended-jobs" className="py-16 px-4 sm:px-6 bg-indigo-50/50 border-y border-indigo-100 flex justify-center items-center">
+            <div className="flex items-center gap-2 text-indigo-600 font-bold">
+              <Sparkles size={20} className="animate-pulse" /> Generating AI
+              Recommendations...
+            </div>
           </section>
         ) : recommendedJobs.length > 0 ? (
-          <section className="py-16 px-4 sm:px-6 bg-indigo-50 border-y border-indigo-100">
+          <section id="ai-recommended-jobs" className="py-16 px-4 sm:px-6 bg-indigo-50 border-y border-indigo-100">
             <div className="max-w-7xl mx-auto">
-              <div className="mb-10">
-                <span className="text-indigo-600 font-bold text-xs uppercase tracking-wider bg-white border border-indigo-100 px-3 py-1 rounded-full flex items-center gap-2 w-fit shadow-sm">
-                  <Sparkles size={12} className="text-indigo-500" /> AI Matched For You
-                </span>
-                <h2 className="text-3xl font-bold text-slate-900 mt-3">
-                  Recommended Jobs
-                </h2>
-                <p className="text-slate-600 mt-2">Personalized matches based on your skills and profile experience.</p>
+              <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <span className="text-indigo-600 font-bold text-xs uppercase tracking-wider bg-white border border-indigo-100 px-3 py-1 rounded-full flex items-center gap-2 w-fit shadow-sm">
+                    <Sparkles size={12} className="text-indigo-500" /> AI Matched For You
+                  </span>
+                  <h2 className="text-3xl font-bold text-slate-900 mt-3">
+                    Recommended Jobs
+                  </h2>
+                  <p className="text-slate-600 mt-2">
+                    Personalized matches based on your skills and profile experience.
+                  </p>
+                </div>
+                
+                <div className="flex flex-col items-start md:items-end text-sm">
+                  {lastFetchedTime && (
+                    <span className="text-slate-500 mb-2">
+                      Last fetched: <span className="font-semibold text-slate-700">{lastFetchedTime}</span>
+                    </span>
+                  )}
+                  <button 
+                    onClick={handleRefreshAI}
+                    disabled={loadingRecommendations}
+                    className="flex items-center gap-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
+                  >
+                    <Sparkles size={16} className={loadingRecommendations ? "animate-spin" : ""} />
+                    Refresh Recommendations
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -204,19 +223,27 @@ export default function Home() {
                         : "border-indigo-100 hover:border-indigo-300"
                     }`}
                   >
-                    <div className={`absolute top-0 right-0 text-[10px] font-extrabold px-3 py-1.5 rounded-bl-xl shadow-sm ${
-                      job.matchScore > 70
-                        ? "bg-gradient-to-r from-amber-300 to-yellow-500 text-amber-950"
-                        : "bg-indigo-600 text-white"
-                    }`}>
+                    <div
+                      className={`absolute top-0 right-0 text-[10px] font-extrabold px-3 py-1.5 rounded-bl-xl shadow-sm ${
+                        job.matchScore > 70
+                          ? "bg-gradient-to-r from-amber-300 to-yellow-500 text-amber-950"
+                          : "bg-indigo-600 text-white"
+                      }`}
+                    >
                       {job.matchScore}% Match
                     </div>
                     <div className="flex items-start justify-between mb-4 mt-2">
                       <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-xl font-bold text-indigo-600 border border-indigo-100 shadow-inner">
-                        {(job.postedByCompany || job.postedByName || "C").charAt(0)}
+                        {(
+                          job.postedByCompany ||
+                          job.postedByName ||
+                          "C"
+                        ).charAt(0)}
                       </div>
                       <span className="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2.5 py-1.5 rounded-lg uppercase tracking-wide border border-slate-200 mt-1">
-                        {Array.isArray(job.jobType) ? job.jobType.join(", ") : job.jobType}
+                        {Array.isArray(job.jobType)
+                          ? job.jobType.join(", ")
+                          : job.jobType}
                       </span>
                     </div>
 
@@ -224,12 +251,17 @@ export default function Home() {
                       {job.title}
                     </h3>
                     <p className="text-sm text-slate-500 font-bold mb-4">
-                      {job.postedByCompany || job.postedByName || "Company Confidential"}
+                      {job.postedByCompany ||
+                        job.postedByName ||
+                        "Company Confidential"}
                     </p>
 
                     <div className="p-3.5 bg-indigo-50/50 rounded-xl mb-5 border border-indigo-50/80">
                       <p className="text-xs font-bold text-indigo-800 leading-snug">
-                        <Sparkles size={12} className="inline mr-1 text-indigo-500" />
+                        <Sparkles
+                          size={12}
+                          className="inline mr-1 text-indigo-500"
+                        />
                         {job.reason}
                       </p>
                     </div>
@@ -240,11 +272,18 @@ export default function Home() {
                         <span className="truncate">{getLocationStr(job)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-slate-600 font-bold">
-                        <IndianRupee size={16} className="text-slate-400 shrink-0" />
+                        <IndianRupee
+                          size={16}
+                          className="text-slate-400 shrink-0"
+                        />
                         <span>
-                          {job.salaryAmount === 0 || (job.salaryMin === 0 && job.salaryMax === 0) 
+                          {job.salaryAmount === 0 ||
+                          (job.salaryMin === 0 && job.salaryMax === 0)
                             ? "Unpaid"
-                            : job.salaryAmount?.toLocaleString() || job.salaryMin?.toLocaleString() || job.salary?.toLocaleString() || "TBD"}
+                            : job.salaryAmount?.toLocaleString() ||
+                              job.salaryMin?.toLocaleString() ||
+                              job.salary?.toLocaleString() ||
+                              "TBD"}
                         </span>
                       </div>
                     </div>
@@ -337,28 +376,7 @@ export default function Home() {
         </section>
       </div>
 
-      {/* 6. FOOTER */}
-      <footer className="bg-slate-950 text-slate-400 w-full pt-16 pb-8 border-t border-slate-900">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 border-b border-slate-800 pb-12">
-            <div className="space-y-4">
-              <Link
-                to="/"
-                className="text-2xl font-bold text-white tracking-tight"
-              >
-                JOBONE Portal
-              </Link>
-              <p className="text-sm leading-relaxed text-slate-400">
-                Connecting talent with opportunity.
-              </p>
-            </div>
-            {/* ... (Keep your footer links as is) ... */}
-          </div>
-          <div className="pt-8 text-center text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} JOBONE Portal. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       {/* JOB DETAILS MODAL */}
       {selectedJob && (
