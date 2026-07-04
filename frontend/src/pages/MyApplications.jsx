@@ -18,6 +18,7 @@ import {
   Building,
   Globe,
   MessageCircle,
+  ArrowLeft,
 } from "lucide-react";
 import ApplicationDetailsModal from "../components/ApplicationDetailsModal";
 
@@ -161,6 +162,12 @@ export default function MyApplications() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] py-20 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-6xl mx-auto mt-10">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-6 flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-semibold transition-colors"
+        >
+          <ArrowLeft size={18} /> Back
+        </button>
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
           <div>
@@ -183,7 +190,8 @@ export default function MyApplications() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {applications.map((app) => {
             const job = app.job || {};
-            const isRemote = job.mode === "Work from Home";
+            const modeStr = Array.isArray(job.mode) ? job.mode.join(", ") : job.mode || "";
+            const isRemote = modeStr.toLowerCase().includes("home") || modeStr === "Online";
             const locationStr = isRemote
               ? "Remote"
               : typeof job.location === "object"
@@ -262,16 +270,16 @@ export default function MyApplications() {
                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
                       <IndianRupee size={14} className="text-slate-400" />
                       <span className="text-xs font-semibold text-slate-700">
-                        {job.salaryAmount
-                          ? job.salaryAmount.toLocaleString()
+                        {job.salaryMin
+                          ? `${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()}/${job.salaryFrequency}`
                           : "TBD"}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
-                      {getModeIcon(job.mode)}
+                      {getModeIcon(Array.isArray(job.mode) ? job.mode.join(", ") : job.mode || "")}
                       <span className="text-xs font-semibold text-slate-700 truncate">
-                        {job.mode}
+                        {Array.isArray(job.mode) ? job.mode.join(", ") : job.mode}
                       </span>
                     </div>
                   </div>
