@@ -26,7 +26,9 @@ import {
   Globe,
   CalendarClock,
   Loader2,
+  LogOut,
 } from "lucide-react";
+import CompanyDisplay from "./CompanyDisplay";
 
 export default function ApplicationDetailsModal({ application, onClose }) {
   const [isRescheduling, setIsRescheduling] = useState(false);
@@ -215,10 +217,14 @@ export default function ApplicationDetailsModal({ application, onClose }) {
                 {job.title}
               </h1>
               <div className="flex flex-wrap items-center text-slate-500 text-xs sm:text-sm font-bold gap-3 mt-2">
-                <span className="text-slate-700">
-                  {job.postedByCompany ||
-                    job.postedByName ||
-                    "Confidential Employer"}
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (job.postedBy) navigate(`/company/${job.postedBy}`);
+                  }}
+                  className="text-slate-700 hover:text-indigo-600 hover:underline cursor-pointer"
+                >
+                  <CompanyDisplay job={job} fallback="Confidential Employer" />
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                 <span className="flex items-center gap-1">
