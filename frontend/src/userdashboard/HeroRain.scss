@@ -60,3 +60,12 @@
     }
   }
 }
+
+@media screen and  (max-width: 768px) {
+  .rain {
+      height: 150vh;
+  }
+  .hero-rain-container {
+    height: 150vh;
+  }
+}
