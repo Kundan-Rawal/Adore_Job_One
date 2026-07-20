@@ -63,7 +63,7 @@ export default function JobDetailsModal({ job, onClose }) {
   return (
     <>
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 sm:bg-slate-900/60 sm:backdrop-blur-sm p-4 sm:p-6"
         onClick={onClose}
       >
         <motion.div
@@ -74,61 +74,61 @@ export default function JobDetailsModal({ job, onClose }) {
           className="bg-[#F8FAFC] w-full max-w-6xl max-h-[90vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl relative"
         >
           {/* --- PREMIUM HEADER --- */}
-          <header className="bg-white p-6 sm:p-8 border-b border-slate-200 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative shrink-0">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-full blur-3xl opacity-60 pointer-events-none -mt-20 -mr-20"></div>
+          <header className="bg-white p-4 sm:p-6 border-b border-slate-200 shadow-sm flex flex-row justify-between items-start gap-3 relative shrink-0">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-full blur-3xl opacity-60 pointer-events-none -mt-20 -mr-20"></div>
 
-            <div className="relative z-10 flex gap-4 sm:gap-6 items-center w-full">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 flex items-center justify-center text-3xl shrink-0 text-indigo-600 font-extrabold shadow-sm">
+            <div className="relative z-10 flex gap-3 sm:gap-5 items-center w-full pr-6">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 flex items-center justify-center text-2xl shrink-0 text-indigo-600 font-extrabold shadow-sm">
                 {job.postedByImage ? (
                   <img
                     src={job.postedByImage}
                     alt="Company"
-                    className="w-full h-full object-cover rounded-2xl"
+                    className="w-full h-full object-cover rounded-xl"
                   />
                 ) : job.postedByCompany ? (
                   job.postedByCompany.charAt(0)
                 ) : job.postedByName ? (
                   job.postedByName.charAt(0)
                 ) : (
-                  <Building2 size={32} />
+                  <Building2 size={24} />
                 )}
               </div>
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="flex-1 min-w-0">
+                <div className="hidden sm:flex flex-wrap items-center gap-1.5 mb-1.5">
                   {/* FACT: Added Status and Posting Date to the UI */}
                   <span
-                    className={`px-3 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest border ${job.status === "active" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-100 text-slate-600 border-slate-200"}`}
+                    className={`px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-extrabold uppercase tracking-widest border ${job.status === "active" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-100 text-slate-600 border-slate-200"}`}
                   >
                     {job.status?.replace("_", " ") || "Active"}
                   </span>
-                  <span className="px-3 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest bg-indigo-50 text-indigo-600 border border-indigo-100">
+                  <span className="px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-extrabold uppercase tracking-widest bg-indigo-50 text-indigo-600 border border-indigo-100 truncate max-w-[120px] sm:max-w-none">
                     {renderArray(job.mode)}
                   </span>
-                  <span className="px-3 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100">
+                  <span className="px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-extrabold uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100 truncate max-w-[100px] sm:max-w-none">
                     {renderArray(job.jobType)}
                   </span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight leading-tight truncate">
                   {job.title}
                 </h1>
-                <div className="flex flex-wrap items-center text-slate-500 text-xs sm:text-sm font-bold gap-3 mt-2">
+                <div className="flex flex-wrap items-center text-slate-500 text-[10px] sm:text-xs font-bold gap-2 mt-1">
                   <span
                     onClick={(e) => {
                       e.stopPropagation();
                       if (job.postedBy) navigate(`/company/${job.postedBy}`);
                     }}
-                    className="text-slate-700 hover:text-indigo-600 hover:underline cursor-pointer"
+                    className="text-slate-700 hover:text-indigo-600 hover:underline cursor-pointer truncate max-w-[120px]"
                   >
                     <CompanyDisplay job={job} fallback="Confidential Employer" />
                   </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                  <span className="flex items-center gap-1">
-                    <MapPin size={14} className="text-slate-400" />{" "}
+                  <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0"></span>
+                  <span className="flex items-center gap-1 truncate max-w-[100px] sm:max-w-none">
+                    <MapPin size={10} className="text-slate-400 shrink-0" />{" "}
                     {displayLocation}
                   </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                  <span className="flex items-center gap-1">
-                    <Clock size={14} className="text-slate-400" /> Posted{" "}
+                  <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0"></span>
+                  <span className="flex items-center gap-1 shrink-0">
+                    <Clock size={10} className="text-slate-400" />
                     {new Date(job.postedAt || Date.now()).toLocaleDateString()}
                   </span>
                 </div>
@@ -137,29 +137,42 @@ export default function JobDetailsModal({ job, onClose }) {
 
             <button
               onClick={onClose}
-              className="absolute top-6 right-6 p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors z-20"
+              className="absolute top-3 right-3 p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors z-20"
             >
-              <X size={20} />
+              <X size={16} />
             </button>
           </header>
 
           {/* --- SCROLLABLE BODY --- */}
-          <div className="overflow-y-auto custom-scrollbar p-4 sm:p-8 flex-1">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="overflow-y-auto custom-scrollbar p-3 sm:p-6 flex-1">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* --- MAIN CONTENT (LEFT) --- */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+                
+                {/* Mobile-only Status Badges */}
+                <div className="flex sm:hidden flex-wrap items-center gap-2 mb-2">
+                  <span
+                    className={`px-2.5 py-1 rounded-md text-[9px] font-extrabold uppercase tracking-widest border ${job.status === "active" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-100 text-slate-600 border-slate-200"}`}
+                  >
+                    {job.status?.replace("_", " ") || "Active"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-md text-[9px] font-extrabold uppercase tracking-widest bg-indigo-50 text-indigo-600 border border-indigo-100">
+                    {renderArray(job.mode)}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-md text-[9px] font-extrabold uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100">
+                    {renderArray(job.jobType)}
+                  </span>
+                </div>
                 {/* Job Highlights */}
                 {validFeatures.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
                     {validFeatures.map((feature, i) => (
                       <div
                         key={i}
-                        className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-100 p-4 sm:p-5 rounded-2xl flex items-start gap-3 sm:gap-4 shadow-sm"
+                        className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-100 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-sm w-fit"
                       >
-                        <div className="p-2 bg-amber-100/50 rounded-lg shrink-0">
-                          <Zap className="text-amber-500" size={18} />
-                        </div>
-                        <p className="text-xs sm:text-sm font-bold text-amber-900 mt-0.5 sm:mt-1 leading-snug">
+                        <Zap className="text-amber-500 shrink-0" size={14} />
+                        <p className="text-[10px] sm:text-xs font-bold text-amber-900 leading-none m-0">
                           {feature}
                         </p>
                       </div>
@@ -253,12 +266,12 @@ export default function JobDetailsModal({ job, onClose }) {
                 <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-8">
                   {/* Job Summary */}
                   <div>
-                    <h2 className="text-sm sm:text-base font-extrabold text-blue-900 bg-blue-100 inline-flex items-center gap-2 px-4 py-2 rounded-xl mb-4 shadow-sm border border-blue-200">
-                      <Briefcase size={18} className="text-blue-700" />
+                    <h2 className="text-xs sm:text-sm font-extrabold text-blue-900 bg-blue-100 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg mb-3 shadow-sm border border-blue-200">
+                      <Briefcase size={14} className="text-blue-700" />
                       Job Summary
                     </h2>
                     <div
-                      className="prose prose-sm max-w-none text-slate-600 leading-relaxed font-medium"
+                      className="text-[11px] sm:text-sm max-w-none text-slate-600 leading-relaxed font-medium"
                       dangerouslySetInnerHTML={{
                         // FACT: Safely displays new jobSummary, OR cleanly slices the top half of an old legacy description
                         __html:
@@ -278,13 +291,13 @@ export default function JobDetailsModal({ job, onClose }) {
                   {/* Key Responsibilities */}
                   {(job.keyResponsibilities ||
                     job.description?.includes("Key Responsibilities")) && (
-                    <div className="pt-6 border-t border-slate-100">
-                      <h2 className="text-sm sm:text-base font-extrabold text-purple-900 bg-purple-100 inline-flex items-center gap-2 px-4 py-2 rounded-xl mb-4 shadow-sm border border-purple-200">
-                        <ListChecks size={18} className="text-purple-700" /> Key
+                    <div className="pt-4 sm:pt-6 border-t border-slate-100">
+                      <h2 className="text-xs sm:text-sm font-extrabold text-purple-900 bg-purple-100 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg mb-3 shadow-sm border border-purple-200">
+                        <ListChecks size={14} className="text-purple-700" /> Key
                         Responsibilities
                       </h2>
 
-                      <div className="prose prose-sm max-w-none text-slate-600 leading-relaxed font-medium prose-ul:list-disc prose-ul:pl-5 prose-li:marker:text-purple-500">
+                      <div className="text-[11px] sm:text-sm max-w-none text-slate-600 leading-relaxed font-medium [&>ul]:list-disc [&>ul]:pl-4 [&>ul>li]:marker:text-purple-500">
                         {(() => {
                           let respHtml = job.keyResponsibilities;
 
@@ -332,9 +345,9 @@ export default function JobDetailsModal({ job, onClose }) {
                   )}
                 </section>
 
-                {/* FACT: New Assessment / Screening Questions Section */}
+                {/* FACT: New Assessment / Screening Questions Section (Desktop Only) */}
                 {job.screeningQuestions?.length > 0 && (
-                  <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                  <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm hidden lg:block">
                     <h2 className="text-base sm:text-lg font-extrabold text-slate-800 mb-4 border-b border-slate-100 pb-4 flex items-center gap-3">
                       <div className="p-2 bg-rose-50 rounded-lg text-rose-600">
                         <HelpCircle size={18} />
@@ -349,7 +362,7 @@ export default function JobDetailsModal({ job, onClose }) {
                       {job.screeningQuestions.map((q, i) => (
                         <li
                           key={i}
-                          className="flex items-start gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm font-medium text-slate-700"
+                          className="flex items-start gap-2 sm:gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 text-[11px] sm:text-sm font-medium text-slate-700"
                         >
                           <span className="font-extrabold text-rose-500">
                             Q{i + 1}.
@@ -365,19 +378,19 @@ export default function JobDetailsModal({ job, onClose }) {
               {/* --- SIDEBAR DETAILS (RIGHT) --- */}
               <div className="lg:col-span-1 space-y-6">
                 {/* Premium Compensation Card */}
-                <section className="bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-xl text-white relative overflow-hidden">
+                <section className="bg-slate-900 rounded-3xl p-5 sm:p-8 shadow-xl text-white relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
-                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-5 sm:mb-6 relative z-10">
+                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 sm:mb-6 relative z-10">
                     Compensation
                   </h3>
                   <div className="relative z-10">
-                    <p className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-wide flex items-center gap-1.5">
+                    <p className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-wide flex items-center gap-1.5">
                       <IndianRupee size={12} /> Total Salary
                     </p>
-                    <div className="flex items-baseline gap-1.5 sm:gap-2 mb-5 sm:mb-6">
+                    <div className="flex items-baseline gap-1.5 sm:gap-2 mb-4 sm:mb-6">
                       {/* FACT: Render the dynamic currency symbol and range properly */}
-                      <span className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                      <span className="text-xl sm:text-3xl font-extrabold tracking-tight">
                         {(() => {
                           // FACT: Safely handle both Legacy Jobs and New Jobs
                           const sMin =
@@ -394,7 +407,7 @@ export default function JobDetailsModal({ job, onClose }) {
                         })()}
                       </span>
                     </div>
-                    <div className="bg-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/10 flex justify-between items-center text-xs sm:text-sm font-bold backdrop-blur-md">
+                    <div className="bg-white/10 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-white/10 flex justify-between items-center text-[10px] sm:text-sm font-bold backdrop-blur-md">
                       <span className="text-slate-300">Frequency</span>
                       <span className="text-emerald-400 uppercase tracking-wider">
                         {job.salaryFrequency || "Monthly"}
@@ -540,23 +553,51 @@ export default function JobDetailsModal({ job, onClose }) {
                     />
                   </div>
                 </section>
+
+                {/* FACT: Assessment / Screening Questions Section (Mobile Only - Placed at bottom) */}
+                {job.screeningQuestions?.length > 0 && (
+                  <section className="bg-white rounded-3xl p-5 sm:p-8 border border-slate-200 shadow-sm block lg:hidden mt-4">
+                    <h2 className="text-sm sm:text-lg font-extrabold text-slate-800 mb-3 border-b border-slate-100 pb-3 flex items-center gap-2">
+                      <div className="p-1.5 bg-rose-50 rounded-lg text-rose-600">
+                        <HelpCircle size={16} />
+                      </div>{" "}
+                      Application Assessment
+                    </h2>
+                    <p className="text-[10px] font-bold text-slate-500 mb-3">
+                      You will be required to answer the following questions during the application process:
+                    </p>
+                    <ul className="space-y-2">
+                      {job.screeningQuestions.map((q, i) => (
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-[10px] sm:text-sm font-medium text-slate-700"
+                        >
+                          <span className="font-extrabold text-rose-500">
+                            Q{i + 1}.
+                          </span>{" "}
+                          {q}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
               </div>
             </div>
           </div>
 
           {/* --- FOOTER ACTION --- */}
-          <div className="p-4 sm:p-6 bg-white border-t border-slate-200 shrink-0 flex justify-end items-center gap-4">
+          <div className="p-3 sm:p-6 bg-white border-t border-slate-200 shrink-0 flex justify-end items-center gap-3 sm:gap-4">
             <button
               onClick={onClose}
-              className="px-6 py-3 font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
+              className="px-4 py-2.5 sm:px-6 sm:py-3 text-[13px] sm:text-base font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={() => setShowApplyModal(true)}
-              className="flex items-center gap-2 bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95"
+              className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 sm:px-8 sm:py-3 rounded-xl text-[13px] sm:text-base font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95"
             >
-              <Send size={18} /> Apply for this Job
+              <Send size={16} className="w-4 h-4 sm:w-[18px] sm:h-[18px]" /> Apply for this Job
             </button>
           </div>
         </motion.div>

@@ -18,6 +18,7 @@ import {
   LogOut,
   FileText,
   User,
+  MessageSquare,
 } from "lucide-react";
 import CompanyDisplay from "../components/CompanyDisplay";
 
@@ -27,6 +28,7 @@ export default function AdminDashboard() {
   const [pendingEmployers, setPendingEmployers] = useState([]);
   const [allEmployers, setAllEmployers] = useState([]);
   const [allJobseekers, setAllJobseekers] = useState([]);
+  const [allContacts, setAllContacts] = useState([]);
 
   // Search States
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,6 +91,11 @@ export default function AdminDashboard() {
         .catch(() => ({ data: { jobs: 0, jobseekers: 0, employers: 0 } }));
       setDbStats(statsRes.data);
 
+      const contactsRes = await axios
+        .get("https://jobone-mrpy.onrender.com/admin/contacts", { headers })
+        .catch(() => ({ data: [] }));
+      setAllContacts(contactsRes.data);
+
       if (admin.role === "superAdmin" || admin.role === "employerAdmin") {
         const [pJobsRes, aJobsRes, pEmpRes, aEmpRes] = await Promise.all([
           axios
@@ -126,6 +133,22 @@ export default function AdminDashboard() {
       if (err.response?.status === 401) navigate("/admin/login");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMarkContactAsRead = async (id) => {
+    try {
+      const token = JSON.parse(localStorage.getItem("adminInfo")).token;
+      await axios.patch(
+        `https://jobone-mrpy.onrender.com/admin/contacts/${id}/read`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAllContacts((prev) =>
+        prev.map((c) => (c._id === id ? { ...c, isRead: true } : c))
+      );
+    } catch (err) {
+      alert("Failed to mark message as read.");
     }
   };
 
@@ -342,10 +365,31 @@ export default function AdminDashboard() {
     </button>
   );
 
+  const MobileTab = ({ id, icon: Icon, label, badgeCount }) => (
+    <button
+      onClick={() => {
+        setActiveTab(id);
+        setSearchResults([]);
+        setSearchQuery("");
+      }}
+      className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm transition-all shrink-0 ${activeTab === id ? "bg-indigo-600 text-white shadow-md shadow-indigo-200" : "bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600"}`}
+    >
+      <Icon size={16} />
+      <span>{label}</span>
+      {badgeCount !== undefined && badgeCount > 0 && (
+        <span
+          className={`text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === id ? "bg-white text-indigo-600" : "bg-indigo-200 text-indigo-700"}`}
+        >
+          {badgeCount}
+        </span>
+      )}
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex ">
+    <div className="h-screen bg-slate-50 font-sans flex flex-col md:flex-row overflow-hidden">
       {/* ─── LEFT SIDEBAR ──────────────────────────────────────────────────────── */}
-      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col h-screen sticky top-0 shadow-sm z-10 ">
+      <aside className="w-72 bg-white border-r border-slate-200 hidden md:flex flex-col h-screen sticky top-0 shadow-sm z-10 ">
         <div className="p-6 border-b border-slate-100  pt-[120px]">
           <h1 className="text-2xl font-black flex items-center gap-3 text-slate-900 tracking-tight">
             <LayoutDashboard className="text-indigo-600" size={28} /> Admin
@@ -431,6 +475,12 @@ export default function AdminDashboard() {
           <p className="text-xs font-black uppercase text-slate-400 tracking-widest pl-4 mb-2 mt-8">
             Database
           </p>
+          <SidebarItem
+            id="contacts"
+            icon={MessageSquare}
+            label="Contact Messages"
+            badgeCount={allContacts.filter((c) => !c.isRead).length}
+          />
           <SidebarItem id="exportDB" icon={Download} label="Database Export" />
         </div>
 
@@ -447,10 +497,158 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
+      {/* ─── MOBILE TOP NAVIGATION ──────────────────────────────────────────────────────── */}
+      <div className="md:hidden sticky top-0 z-20 bg-white shadow-sm border-b border-slate-200 pt-[100px] flex flex-col">
+        <div className="px-4 pb-2 flex justify-between items-center text-slate-400 w-full">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Options</span>
+          <span className="text-[10px] font-bold tracking-wider flex items-center gap-1 text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full animate-pulse">
+            Swipe to explore <span className="text-sm leading-none">→</span>
+          </span>
+        </div>
+        <div className="pb-4 px-4 flex gap-2 overflow-x-auto whitespace-nowrap hide-scrollbar">
+          {canManageEmployers && (
+            <>
+              <MobileTab id="pendingJobs" icon={Briefcase} label="Pending Jobs" badgeCount={pendingJobs.length} />
+              <MobileTab id="pendingEmployers" icon={Building2} label="Pending Employers" badgeCount={pendingEmployers.length} />
+              <MobileTab id="allJobs" icon={FileText} label="All Jobs" badgeCount={allJobs.length} />
+              <MobileTab id="allEmployers" icon={Building2} label="All Employers" badgeCount={allEmployers.length} />
+              <MobileTab id="searchEmployers" icon={Search} label="Search / Freeze" />
+            </>
+          )}
+          {canManageJobseekers && (
+            <>
+              <MobileTab id="allJobseekers" icon={Users} label="All Jobseekers" badgeCount={allJobseekers.length} />
+              <MobileTab id="searchJobseekers" icon={Search} label="Search / Freeze" />
+            </>
+          )}
+          {adminRole === "superAdmin" && (
+            <MobileTab id="manageAdmins" icon={ShieldAlert} label="Manage Admins" />
+          )}
+          <MobileTab
+            id="contacts"
+            icon={MessageSquare}
+            label="Contact Messages"
+            badgeCount={allContacts.filter((c) => !c.isRead).length}
+          />
+          <MobileTab id="exportDB" icon={Download} label="Database Export" />
+          <button
+            onClick={() => {
+              localStorage.removeItem("adminInfo");
+              navigate("/admin/login");
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm bg-slate-900 text-white shrink-0 ml-2 shadow-sm mr-4"
+          >
+            <LogOut size={16} /> Logout
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
+
       {/* ─── MAIN CONTENT AREA ──────────────────────────────────────────────────────── */}
-      <main className="flex-1 p-8 lg:p-12 overflow-y-auto h-screen bg-slate-50/50">
-        <div className="max-w-5xl mx-auto space-y-6  pt-[100px]">
+      <main className="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto bg-slate-50/50">
+        <div className="max-w-5xl mx-auto space-y-6 pt-4 md:pt-[100px]">
           {/* EXPORT DB VIEW */}
+          {activeTab === "contacts" && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+                <div className="bg-indigo-100 p-2.5 rounded-xl">
+                  <MessageSquare size={24} className="text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800">
+                    Contact Messages
+                  </h2>
+                  <p className="text-slate-500 font-medium">
+                    User inquiries, feedback, and complaints.
+                  </p>
+                </div>
+              </div>
+
+              {allContacts.length === 0 ? (
+                <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500">
+                  <MessageSquare size={48} className="mx-auto text-slate-300 mb-4" />
+                  <p className="font-bold text-lg">No messages found.</p>
+                  <p className="text-sm">You're all caught up!</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {allContacts.map((contact) => (
+                    <div
+                      key={contact._id}
+                      className={`relative flex flex-col p-6 rounded-2xl border transition-all duration-300 ${
+                        contact.isRead
+                          ? "bg-slate-50/50 border-slate-200 shadow-none opacity-80"
+                          : "bg-white border-indigo-200 shadow-md shadow-indigo-100/50 -translate-y-0.5"
+                      }`}
+                    >
+                      {!contact.isRead && (
+                        <div className="absolute -top-2 -right-2 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm">
+                          New
+                        </div>
+                      )}
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-lg ${contact.isRead ? "bg-slate-200 text-slate-500" : "bg-indigo-100 text-indigo-700"}`}>
+                            {contact.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-slate-800 leading-tight">
+                              {contact.name}
+                            </h3>
+                            <a href={`mailto:${contact.email}`} className="text-xs text-indigo-500 font-medium hover:underline">
+                              {contact.email}
+                            </a>
+                          </div>
+                        </div>
+                        <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-md ${
+                          contact.communicationType === "complaint" ? "bg-red-100 text-red-700" :
+                          contact.communicationType === "feedback" ? "bg-emerald-100 text-emerald-700" :
+                          "bg-amber-100 text-amber-700"
+                        }`}>
+                          {contact.communicationType}
+                        </span>
+                      </div>
+                      
+                      <div className={`flex-1 p-4 rounded-xl mb-4 text-sm whitespace-pre-wrap ${contact.isRead ? "bg-white text-slate-600 border border-slate-200" : "bg-indigo-50/50 text-slate-700"}`}>
+                        {contact.message}
+                      </div>
+
+                      <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100/80">
+                        <span className="text-xs text-slate-400 font-medium">
+                          {new Date(contact.createdAt).toLocaleString(undefined, {
+                            dateStyle: "medium",
+                            timeStyle: "short"
+                          })}
+                        </span>
+                        {!contact.isRead ? (
+                          <button
+                            onClick={() => handleMarkContactAsRead(contact._id)}
+                            className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1.5 rounded-full transition-colors"
+                          >
+                            <CheckCircle size={14} /> Mark as Read
+                          </button>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs font-bold text-slate-400">
+                            <CheckCircle size={14} /> Viewed
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === "exportDB" && (
             <div>
               <h2 className="text-2xl font-black text-slate-800 mb-2 flex items-center gap-2">
@@ -573,7 +771,7 @@ export default function AdminDashboard() {
                   pendingJobs.map((job) => (
                     <div
                       key={job._id}
-                      className="bg-white p-6 rounded-2xl border border-slate-200 flex justify-between items-center gap-4 shadow-sm hover:shadow-md transition"
+                      className="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition"
                     >
                       <div>
                         <h3 className="font-bold text-lg text-slate-800">
@@ -630,7 +828,7 @@ export default function AdminDashboard() {
                   pendingEmployers.map((emp) => (
                     <div
                       key={emp._id}
-                      className="bg-white p-6 rounded-2xl border border-slate-200 flex justify-between items-center gap-4 shadow-sm hover:shadow-md transition"
+                      className="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition"
                     >
                       <div>
                         <h3 className="font-bold text-lg text-slate-800">
@@ -688,7 +886,7 @@ export default function AdminDashboard() {
                   allJobs.map((job) => (
                     <div
                       key={job._id}
-                      className="bg-white p-6 rounded-2xl border border-slate-200 flex justify-between items-center gap-4 shadow-sm hover:shadow-md transition"
+                      className="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition"
                     >
                       <div>
                         <h3 className="font-bold text-lg text-slate-800">
@@ -738,7 +936,7 @@ export default function AdminDashboard() {
                   allEmployers.map((emp) => (
                     <div
                       key={emp._id}
-                      className={`bg-white p-6 rounded-2xl border ${emp.isFrozen ? "border-rose-300 bg-rose-50/30" : "border-slate-200"} flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm hover:shadow-md transition`}
+                      className={`bg-white p-6 rounded-2xl border ${emp.isFrozen ? "border-rose-300 bg-rose-50/30" : "border-slate-200"} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition`}
                     >
                       <div>
                         <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
@@ -798,7 +996,7 @@ export default function AdminDashboard() {
                   allJobseekers.map((user) => (
                     <div
                       key={user._id}
-                      className={`bg-white p-6 rounded-2xl border ${user.isFrozen ? "border-rose-300 bg-rose-50/30" : "border-slate-200"} flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm hover:shadow-md transition`}
+                      className={`bg-white p-6 rounded-2xl border ${user.isFrozen ? "border-rose-300 bg-rose-50/30" : "border-slate-200"} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm hover:shadow-md transition`}
                     >
                       <div className="flex items-center gap-4">
                         {user.profilePicture ? (

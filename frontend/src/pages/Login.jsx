@@ -83,15 +83,30 @@ export default function Login() {
   return (
     // FACT: Replaced 100dvh with min-h-screen to prevent the desktop band issue.
     // Removed unnecessary w-full that conflicts with Windows scrollbars.
-    <div className="relative flex flex-col justify-center items-center min-h-screen bg-slate-950 font-sans p-4 sm:p-8 overflow-x-hidden">
+    // UPDATE: Now fully fixed to screen to prevent any scrolling.
+    <div className={`fixed inset-0 flex flex-col justify-center items-center font-sans p-4 sm:p-8 overflow-hidden transition-colors duration-700 ${
+      activeTab === "employer" ? "bg-[#0a0b22]" : "bg-slate-950"
+    }`}>
       {/* FACT: The background is pinned directly to the screen viewport */}
-      <div className="fixed inset-0 z-0 bg-slate-950 pointer-events-none">
-        <div className="opacity-50">
-          <BackgroundJoin />
+      <div className={`fixed inset-0 z-0 pointer-events-none transition-colors duration-700 ${
+        activeTab === "employer" ? "bg-[#0a0b22]" : "bg-slate-950"
+      }`}>
+        <div className="absolute inset-0 z-0">
+          <BackgroundJoin theme={activeTab} />
         </div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl mt-8 mb-8">
+      {/* Admin Portal Button */}
+      <button
+        type="button"
+        onClick={() => navigate("/admin/login")}
+        className="fixed top-12 right-4 sm:top-14 sm:right-8 z-50 flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 rounded-full px-4 py-2 text-xs font-bold transition-all backdrop-blur-md shadow-lg"
+      >
+        <span className="w-2 h-2 rounded-full bg-red-500/80"></span>
+        Admin
+      </button>
+
+      <div className="relative z-10 w-full max-w-md bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
 

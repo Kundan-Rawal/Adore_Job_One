@@ -1,46 +1,31 @@
-import React, { useEffect } from "react";
+import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { FaArrowRight, FaCheckCircle, FaStar } from "react-icons/fa";
 import demoIllustration from "../assets/skyscrapers.jpg";
 
 export default function CompanyCard() {
   const navigate = useNavigate();
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+  const containerRef = useRef(null);
 
-  // Soft spring for cinematic global tracking
-  const mouseXSpring = useSpring(x, { stiffness: 100, damping: 30 });
-  const mouseYSpring = useSpring(y, { stiffness: 100, damping: 30 });
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["12deg", "-12deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-12deg", "12deg"]);
-
-  
-  useEffect(() => {
-    const handleGlobalMouseMove = (e) => {
-      const xPct = e.clientX / window.innerWidth - 0.5;
-      const yPct = e.clientY / window.innerHeight - 0.5;
-      x.set(xPct);
-      y.set(yPct);
-    };
-
-    window.addEventListener("mousemove", handleGlobalMouseMove);
-    return () => window.removeEventListener("mousemove", handleGlobalMouseMove);
-  }, [x, y]);
+  // Scroll parallax: bottom-left to top-right
+  const rotateX = useTransform(scrollYProgress, [0, 1], ["15deg", "-15deg"]);
+  const rotateY = useTransform(scrollYProgress, [0, 1], ["-15deg", "15deg"]);
 
   return (
     // FACT: Perspective is established here
     <section
-      className="px-4 py-16 bg-[#F8FAFC] flex justify-center items-center font-sans overflow-hidden"
+      ref={containerRef}
+      className="px-4 py-12 md:py-16 bg-[#F8FAFC] flex justify-center items-center font-sans overflow-hidden"
       style={{ perspective: 2000 }}
     >
-      {/* FACT: 3D Chain Link 1 - The fade-in wrapper MUST preserve 3D */}
+      {/* FACT: 3D Chain Link 1 - The wrapper MUST preserve 3D */}
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
         className="w-full max-w-6xl"
         style={{ transformStyle: "preserve-3d" }}
       >
@@ -51,7 +36,7 @@ export default function CompanyCard() {
             rotateY,
             transformStyle: "preserve-3d",
           }}
-          className="relative w-full rounded-[2.5rem] bg-[#0B1120] shadow-2xl border border-slate-800"
+          className="relative w-full rounded-3xl md:rounded-[2.5rem] bg-[#0B1120] shadow-2xl border border-slate-800"
         >
           {/* Ambient Glows pushed backwards */}
           <div
@@ -64,12 +49,12 @@ export default function CompanyCard() {
           />
 
           <div
-            className="relative flex flex-col items-center justify-between gap-12 p-8 md:flex-row md:p-16 lg:p-20"
+            className="relative flex flex-col items-center justify-between gap-8 p-6 sm:p-8 md:gap-12 md:flex-row md:p-16 lg:p-20"
             style={{ transformStyle: "preserve-3d" }}
           >
             {/* Left Content Container */}
             <div
-              className="z-10 text-left md:w-1/2"
+              className="z-10 text-left w-full md:w-1/2"
               style={{ transformStyle: "preserve-3d" }}
             >
               <div
@@ -84,7 +69,7 @@ export default function CompanyCard() {
               </div>
 
               <h2
-                className="text-4xl font-extrabold tracking-tight text-white md:text-5xl lg:text-6xl leading-[1.1] drop-shadow-2xl"
+                className="text-3xl font-extrabold tracking-tight text-white md:text-5xl lg:text-6xl leading-[1.1] drop-shadow-2xl"
                 style={{ transform: "translateZ(80px)" }}
               >
                 Find your next <br />
@@ -94,7 +79,7 @@ export default function CompanyCard() {
               </h2>
 
               <p
-                className="mt-6 max-w-md text-base leading-relaxed text-slate-400 font-medium"
+                className="mt-4 md:mt-6 max-w-md text-sm md:text-base leading-relaxed text-slate-400 font-medium"
                 style={{ transform: "translateZ(50px)" }}
               >
                 Skip the generic listings. We’ve curated 500+ top-rated
@@ -114,12 +99,12 @@ export default function CompanyCard() {
                   <FaArrowRight className="text-xs transition-transform group-hover:translate-x-1" />
                 </button>
 
-                <div className="flex items-center gap-3 text-sm text-slate-400 font-medium">
+                <div className="flex items-center gap-3 text-xs md:text-sm text-slate-400 font-medium">
                   <div className="flex -space-x-2">
                     {[1, 2, 3].map((i) => (
                       <div
                         key={i}
-                        className="h-8 w-8 rounded-full border-2 border-[#0B1120] bg-slate-800"
+                        className="h-6 w-6 md:h-8 md:w-8 rounded-full border-2 border-[#0B1120] bg-slate-800"
                       />
                     ))}
                   </div>
@@ -134,7 +119,7 @@ export default function CompanyCard() {
               style={{ transformStyle: "preserve-3d" }}
             >
               <div
-                className="overflow-hidden rounded-[2rem] border border-white/20 shadow-[0_30px_50px_rgba(0,0,0,0.5)] bg-slate-900 aspect-[4/3]"
+                className="overflow-hidden rounded-2xl md:rounded-[2rem] border border-white/20 shadow-[0_30px_50px_rgba(0,0,0,0.5)] bg-slate-900 aspect-video md:aspect-[4/3]"
                 style={{ transform: "translateZ(30px)" }}
               >
                 <img
@@ -146,7 +131,7 @@ export default function CompanyCard() {
               </div>
 
               <div
-                className="absolute -left-4 md:-left-12 bottom-8 z-20 rounded-2xl border border-white/10 bg-[#0F172A]/90 p-3.5 backdrop-blur-md shadow-[0_30px_30px_-10px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-emerald-500/50 hover:scale-105 cursor-default"
+                className="absolute -left-2 md:-left-12 bottom-4 md:bottom-8 z-20 rounded-xl md:rounded-2xl border border-white/10 bg-[#0F172A]/90 p-2.5 md:p-3.5 backdrop-blur-md shadow-[0_30px_30px_-10px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-emerald-500/50 hover:scale-105 cursor-default"
                 style={{ transform: "translateZ(90px)" }}
               >
                 <div className="flex items-center gap-3">
@@ -163,7 +148,7 @@ export default function CompanyCard() {
               </div>
 
               <div
-                className="absolute -right-4 md:-right-8 top-8 z-20 rounded-2xl border border-white/10 bg-blue-600/90 p-4 backdrop-blur-md shadow-[0_30px_30px_-10px_rgba(0,0,0,0.5)] flex flex-col items-center transition-all duration-300 hover:border-blue-400/50 hover:scale-105 cursor-default"
+                className="absolute -right-2 md:-right-8 top-4 md:top-8 z-20 rounded-xl md:rounded-2xl border border-white/10 bg-blue-600/90 p-3 md:p-4 backdrop-blur-md shadow-[0_30px_30px_-10px_rgba(0,0,0,0.5)] flex flex-col items-center transition-all duration-300 hover:border-blue-400/50 hover:scale-105 cursor-default"
                 style={{ transform: "translateZ(120px)" }}
               >
                 <p className="text-2xl font-extrabold text-white flex items-center gap-1">

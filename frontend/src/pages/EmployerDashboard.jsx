@@ -23,6 +23,15 @@ export default function EmployerDashboard() {
   const [employerName, setEmployerName] = useState("Employer");
   const [loading, setLoading] = useState(true);
 
+  // FACT: View mode state (table vs card)
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem("employerViewMode") || "table";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("employerViewMode", viewMode);
+  }, [viewMode]);
+
   // FACT: Added approval status state to lock the dashboard
   const [approvalStatus, setApprovalStatus] = useState("pending");
 
@@ -127,7 +136,7 @@ export default function EmployerDashboard() {
   };
 
   return (
-    <div className="min-h-screen py-20 bg-slate-50 p-10 font-sans">
+    <div className="min-h-screen pt-24 pb-8 sm:py-20 bg-slate-50 px-4 sm:px-10 font-sans">
       {/* Sidebar */}
 
       <aside className="fixed left-0 top-15 hidden h-full w-64 border-r border-slate-200 bg-white p-6 md:block z-20">
@@ -180,13 +189,13 @@ export default function EmployerDashboard() {
         </div>
       </aside>
 
-      <main className="flex-1 md:ml-64 px-4 sm:px-8 relative">
-        <header className="mb-10 flex items-center justify-between">
+      <main className="flex-1 md:ml-64 px-0 sm:px-8 relative">
+        <header className="mb-6 sm:mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
               Welcome back, {employerName}!
             </h1>
-            <p className="mt-1 text-slate-500">
+            <p className="mt-1 text-sm sm:text-base text-slate-500">
               {approvalStatus === "approved"
                 ? "Here's a live overview of your hiring pipeline."
                 : "Your account security status overview."}
@@ -197,7 +206,7 @@ export default function EmployerDashboard() {
           {approvalStatus === "approved" && (
             <button
               onClick={() => navigate("/createjob")}
-              className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 active:scale-95"
+              className="flex items-center justify-center w-full sm:w-auto gap-2 rounded-xl bg-blue-600 px-5 py-2.5 sm:px-6 sm:py-3 text-sm font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 active:scale-95"
             >
               <PlusCircle size={18} /> Post New Job
             </button>
@@ -250,7 +259,7 @@ export default function EmployerDashboard() {
           /* FACT: The Normal Approved Dashboard */
           <>
             {/* Quick Stats Grid */}
-            <div className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-4">
+            <div className="mb-8 sm:mb-10 grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-4">
               <StatCard
                 label="Total Jobs Posted"
                 value={metrics.totalJobs}
@@ -274,10 +283,14 @@ export default function EmployerDashboard() {
             </div>
 
             <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <h2 className="text-lg font-extrabold text-slate-900">
+              <div className="p-4 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
                   Job Management Tracker
                 </h2>
+                <div className="flex bg-slate-200 p-1 rounded-lg">
+                   <button onClick={() => setViewMode('table')} className={`px-2.5 sm:px-3 py-1 text-[10px] sm:text-xs font-bold rounded-md transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>Table</button>
+                   <button onClick={() => setViewMode('card')} className={`px-2.5 sm:px-3 py-1 text-[10px] sm:text-xs font-bold rounded-md transition-all ${viewMode === 'card' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>Cards</button>
+                </div>
               </div>
 
               {jobs.length === 0 ? (
@@ -292,13 +305,25 @@ export default function EmployerDashboard() {
                     Get started by creating your first listing.
                   </p>
                 </div>
+              ) : viewMode === "card" ? (
+                <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 bg-slate-50/30">
+                  {jobs.map((job) => (
+                    <JobCard 
+                      key={job._id} 
+                      job={job} 
+                      toggleJobStatus={toggleJobStatus} 
+                      navigate={navigate} 
+                      employerName={employerName} 
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="overflow-x-auto custom-scrollbar">
-                  <table className="w-full text-left border-collapse min-w-[1200px]">
+                  <table className="w-full text-left border-collapse min-w-[1000px] sm:min-w-[1200px]">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
-                        <th className="p-4 font-bold">Job Title & Details</th>
-                        <th className="p-4 font-bold text-center">Status</th>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[10px] sm:text-xs uppercase tracking-wider text-slate-500">
+                        <th className="p-3 sm:p-4 font-bold">Job Title & Details</th>
+                        <th className="p-3 sm:p-4 font-bold text-center">Status</th>
                         <th className="p-4 font-bold text-center border-l border-slate-100 bg-slate-50/50">
                           Total
                         </th>
@@ -333,15 +358,15 @@ export default function EmployerDashboard() {
                           className="hover:bg-slate-50 transition-colors cursor-pointer group"
                         >
                           {/* Job Title & Details */}
-                          <td className="p-4">
-                            <div className="font-extrabold text-slate-900 text-sm group-hover:text-blue-600 transition-colors">
+                          <td className="p-3 sm:p-4">
+                            <div className="font-extrabold text-slate-900 text-[13px] sm:text-sm group-hover:text-blue-600 transition-colors">
                               {job.title}
                             </div>
-                            <div className="text-xs text-slate-500 font-bold mt-1 flex items-center gap-1.5">
+                            <div className="text-[10px] sm:text-xs text-slate-500 font-bold mt-1 flex items-center gap-1.5">
                               <CompanyDisplay job={job} fallback={employerName || "Your Company"} />
                             </div>
-                            <div className="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1.5">
-                              <Clock size={12} /> Posted:{" "}
+                            <div className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1 flex items-center gap-1.5">
+                              <Clock size={12} className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Posted:{" "}
                               {new Date(job.postedAt).toLocaleDateString()}
                             </div>
                           </td>
@@ -495,24 +520,6 @@ export default function EmployerDashboard() {
                               >
                                 <Power size={18} />
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleJobStatus(job._id, job.status);
-                                }}
-                                className={`p-2 rounded-lg transition-colors ${
-                                  job.status === "active"
-                                    ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                                    : "text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
-                                }`}
-                                title={
-                                  job.status === "active"
-                                    ? "Close Job"
-                                    : "Reactivate Job"
-                                }
-                              >
-                                <Power size={18} />
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -543,20 +550,89 @@ function NavItem({ icon, label, active = false, onClick }) {
 
 function StatCard({ label, value, color }) {
   const colors = {
+    indigo: "bg-indigo-50 text-indigo-600",
     blue: "bg-blue-50 text-blue-600",
     emerald: "bg-emerald-50 text-emerald-600",
     purple: "bg-purple-50 text-purple-600",
   };
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="text-sm font-medium text-slate-500">{label}</p>
-      <div className="mt-2 flex items-end justify-between">
-        <h4 className="text-3xl font-extrabold text-slate-900">{value}</h4>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+      <p className="text-[11px] sm:text-sm font-medium text-slate-500 truncate">{label}</p>
+      <div className="mt-1 sm:mt-2 flex items-end justify-between">
+        <h4 className="text-xl sm:text-3xl font-extrabold text-slate-900">{value}</h4>
         <span
-          className={`rounded-lg px-2 py-1 text-xs font-bold ${colors[color]}`}
+          className={`rounded-lg px-1.5 py-0.5 sm:px-2 sm:py-1 text-[9px] sm:text-xs font-bold ${colors[color] || colors.blue}`}
         >
           Live
         </span>
+      </div>
+    </div>
+  );
+}
+
+function MetricBox({ title, value, color, onClick }) {
+  const colors = {
+    slate: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100",
+    blue: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
+    purple: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+    orange: "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100",
+    amber: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100",
+    emerald: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
+    rose: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100",
+  };
+  return (
+    <div onClick={onClick} className={`rounded-lg p-1.5 text-center border cursor-pointer transition-colors ${colors[color]}`}>
+      <div className="text-[8px] sm:text-[9px] font-bold uppercase truncate px-0.5 opacity-80" title={title}>{title}</div>
+      <div className="text-xs sm:text-sm font-extrabold mt-0.5">{value}</div>
+    </div>
+  );
+}
+
+function JobCard({ job, toggleJobStatus, navigate, employerName }) {
+  return (
+    <div 
+      onClick={() => navigate(`/job/${job._id}`)}
+      className="border border-slate-200 bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col gap-3 group relative"
+    >
+      <div className="flex justify-between items-start gap-3">
+        <div className="flex-1">
+           <div className="font-extrabold text-slate-900 text-[14px] sm:text-[15px] group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight mb-1">{job.title}</div>
+           <div className="text-[11px] text-slate-500 font-bold flex items-center gap-1.5 mb-0.5"><CompanyDisplay job={job} fallback={employerName || "Your Company"} /></div>
+           <div className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5"><Clock size={11} className="w-3 h-3" /> Posted: {new Date(job.postedAt).toLocaleDateString()}</div>
+        </div>
+        <span className={`px-2.5 py-1 rounded-md text-[9px] font-extrabold uppercase tracking-wider whitespace-nowrap ${job.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>
+          {job.status}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-1.5 mt-1">
+         <MetricBox title="Total" value={job.stats?.total || 0} color="slate" onClick={(e) => { e.stopPropagation(); navigate(`/job/${job._id}/applicants`); }} />
+         <MetricBox title="Short" value={job.stats?.shortlisted || 0} color="blue" onClick={(e) => { e.stopPropagation(); navigate(`/job/${job._id}/applicants?status=shortlisted`); }} />
+         <MetricBox title="Int S" value={job.stats?.interviewScheduled || 0} color="purple" onClick={(e) => { e.stopPropagation(); navigate(`/job/${job._id}/applicants?status=Interview Scheduled`); }} />
+         <MetricBox title="Int C" value={job.stats?.interviewConducted || 0} color="orange" onClick={(e) => { e.stopPropagation(); navigate(`/job/${job._id}/applicants?status=Interview Conducted`); }} />
+         <MetricBox title="Assig" value={job.stats?.assignmentScheduled || 0} color="amber" onClick={(e) => { e.stopPropagation(); navigate(`/job/${job._id}/applicants?status=Assignment Scheduled`); }} />
+         <MetricBox title="Hired" value={job.stats?.hired || 0} color="emerald" onClick={(e) => { e.stopPropagation(); navigate(`/job/${job._id}/applicants?status=hired`); }} />
+         <MetricBox title="NCTT" value={job.stats?.nctt || 0} color="rose" onClick={(e) => { e.stopPropagation(); navigate(`/job/${job._id}/applicants?status=NCTT`); }} />
+      </div>
+
+      <div className="flex items-center justify-between mt-2 border-t border-slate-100 pt-3">
+         <span className="text-[10px] text-slate-400 font-medium px-1">Click to view details</span>
+         <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleJobStatus(job._id, job.status);
+            }}
+            disabled={job.status === "pending_approval" || job.status === "rejected"}
+            className={`p-2 rounded-xl transition-colors ${
+              job.status === "pending_approval" || job.status === "rejected"
+                ? "text-slate-300 cursor-not-allowed bg-slate-50"
+                : job.status === "active"
+                  ? "text-rose-500 hover:text-white hover:bg-rose-500 bg-rose-50 border border-rose-100"
+                  : "text-emerald-600 hover:text-white hover:bg-emerald-600 bg-emerald-50 border border-emerald-100"
+            }`}
+          >
+            <Power size={14} />
+          </button>
       </div>
     </div>
   );

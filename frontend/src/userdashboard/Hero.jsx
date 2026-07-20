@@ -45,33 +45,15 @@ const Hero = () => {
 
   return (
     <section className="hero-rain-container flex items-center justify-center relative w-full min-h-[100dvh] pt-32 pb-20 overflow-hidden">
-      {/* Animated Glass Blobs */}
+      {/* Static Glass Blobs (Optimized for Performance) */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <motion.div
-          animate={{
-            x: ["0vw", "40vw", "-20vw", "20vw", "0vw"],
-            y: ["0vh", "15vh", "5vh", "-10vh", "0vh"],
-            scale: [1, 1.1, 0.9, 1.2, 1],
-          }}
-          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+        <div
           className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] rounded-full bg-cyan-700/30 mix-blend-screen blur-[100px]"
         />
-        <motion.div
-          animate={{
-            x: ["0vw", "-30vw", "20vw", "-15vw", "0vw"],
-            y: ["0vh", "-10vh", "20vh", "5vh", "0vh"],
-            scale: [1, 0.9, 1.1, 0.9, 1],
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+        <div
           className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] rounded-full bg-blue-800/30 mix-blend-screen blur-[120px]"
         />
-        <motion.div
-          animate={{
-            x: ["0vw", "15vw", "-20vw", "5vw", "0vw"],
-            y: ["0vh", "10vh", "-15vh", "20vh", "0vh"],
-            scale: [1, 1.2, 0.8, 1.1, 1],
-          }}
-          transition={{ duration: 11, repeat: Infinity, ease: "linear" }}
+        <div
           className="absolute top-[40%] left-[60%] w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] rounded-full bg-indigo-700/30 mix-blend-screen blur-[90px]"
         />
       </div>

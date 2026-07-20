@@ -179,13 +179,34 @@ export default function Home() {
 
         {/* RECOMMENDED JOBS (AI MATCHED) */}
         {loadingRecommendations ? (
-          <section
-            id="ai-recommended-jobs"
-            className="py-16 px-4 sm:px-6 bg-indigo-50/50 border-y border-indigo-100 flex justify-center items-center"
-          >
-            <div className="flex items-center gap-2 text-indigo-600 font-bold">
-              <Sparkles size={20} className="animate-pulse" /> Generating AI
-              Recommendations...
+          <section id="ai-recommended-jobs" className="py-16 px-4 sm:px-6 bg-indigo-50 border-y border-indigo-100">
+            <div className="max-w-7xl mx-auto">
+              <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <span className="text-indigo-600 font-bold text-xs uppercase tracking-wider bg-white border border-indigo-100 px-3 py-1 rounded-full flex items-center gap-2 w-fit shadow-sm">
+                    <Sparkles size={12} className="text-indigo-500 animate-pulse" /> Generating AI Recommendations...
+                  </span>
+                  <h2 className="text-3xl font-bold text-slate-900 mt-3">Recommended Jobs</h2>
+                  <p className="text-slate-600 mt-2">Personalized matches based on your skills and profile experience.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white p-6 rounded-3xl border border-indigo-100 shadow-sm flex flex-col h-full relative overflow-hidden animate-pulse">
+                    <div className="flex items-start justify-between mb-4 mt-2">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100"></div>
+                      <div className="w-16 h-6 rounded-lg bg-slate-100 border border-slate-200 mt-1"></div>
+                    </div>
+                    <div className="h-6 w-3/4 bg-slate-200 rounded-md mb-1"></div>
+                    <div className="h-4 w-1/2 bg-slate-100 rounded-md mb-4"></div>
+                    <div className="p-3.5 bg-indigo-50/50 rounded-xl mb-5 h-10 w-full border border-indigo-50/80"></div>
+                    <div className="mt-auto space-y-3">
+                      <div className="h-4 w-1/2 bg-slate-100 rounded-md"></div>
+                      <div className="h-4 w-1/3 bg-slate-100 rounded-md"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         ) : recommendedJobs.length > 0 ? (

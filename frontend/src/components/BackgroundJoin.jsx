@@ -1,7 +1,12 @@
 import React, { useRef, useEffect } from "react";
 
-const BackgroundJoin = () => {
+const BackgroundJoin = ({ theme = "user" }) => {
   const canvasRef = useRef(null);
+  const colorRef = useRef("59, 130, 246");
+
+  useEffect(() => {
+    colorRef.current = theme === "employer" ? "99, 102, 241" : "59, 130, 246";
+  }, [theme]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -26,13 +31,14 @@ const BackgroundJoin = () => {
 
     const initParticles = () => {
       particles = [];
+      const isMobile = document.documentElement.clientWidth < 640;
       for (let i = 0; i < particleCount; i++) {
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
           vx: (Math.random() - 0.5) * 0.8,
           vy: (Math.random() - 0.5) * 0.8,
-          radius: 6,
+          radius: isMobile ? 3 : 6,
         });
       }
     };
@@ -63,7 +69,7 @@ const BackgroundJoin = () => {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(96, 165, 250, 0.8)";
+        ctx.fillStyle = `rgba(${colorRef.current}, 0.8)`;
         ctx.fill();
 
         for (let j = index; j < particles.length; j++) {
@@ -74,7 +80,7 @@ const BackgroundJoin = () => {
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
             const alpha = 1 - dist / connectionDistance;
-            ctx.strokeStyle = `rgba(96, 165, 250, ${alpha})`;
+            ctx.strokeStyle = `rgba(${colorRef.current}, ${alpha})`;
             ctx.stroke();
           }
         }
